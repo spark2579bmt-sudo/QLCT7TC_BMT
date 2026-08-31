@@ -1,0 +1,1507 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Quản lý cư trú Tổ dân phố 7 Thành Công - Công an phường Buôn Ma Thuột</title>
+
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#1976D2">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+    <!-- Google Fonts & FontAwesome -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- SheetJS đọc/ghi file Excel -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    
+    <!-- Face-API.js cho tính năng nhận diện khuôn mặt -->
+    <script defer src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/dist/face-api.js"></script>
+
+    <style>
+        :root {
+            --primary-color: #1976D2;
+            --primary-dark: #1565C0;
+            --accent-color: #28a745;
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-color: #2c3e50;
+            --text-muted: #6c757d;
+            --border-color: #e0e0e0;
+            --shadow-sm: 0 2px 4px rgba(0,0,0,0.08);
+            --shadow-md: 0 4px 12px rgba(0,0,0,0.12);
+            --radius: 12px;
+            --transition: all 0.25s ease;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Roboto', sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: var(--bg-color); color: var(--text-color); padding-bottom: 40px; }
+
+        /* MÀN HÌNH KHÓA BẢO MẬT */
+        .auth-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100vw; height: 100vh;
+            background: linear-gradient(135deg, #1565C0, #0d47a1);
+            z-index: 9999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .auth-card {
+            background: white;
+            padding: 30px 25px;
+            border-radius: var(--radius);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 420px;
+            text-align: center;
+        }
+        .auth-card i.lock-icon { font-size: 3rem; color: var(--primary-color); margin-bottom: 15px; }
+        .auth-card h2 { font-size: 1.3rem; margin-bottom: 10px; color: var(--text-color); }
+        .auth-card p { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px; line-height: 1.4; }
+        .auth-card input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid var(--border-color); border-radius: 6px; outline: none; font-size: 1rem; }
+        .auth-card .btn-lock { width: 100%; padding: 12px; background: var(--primary-color); color: white; border: none; border-radius: 6px; font-size: 1rem; font-weight: 500; cursor: pointer; margin-bottom: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;}
+        .auth-card .btn-lock:hover { background: var(--primary-dark); }
+        .auth-card .btn-face-unlock { background: #6c757d; }
+        .auth-card .btn-face-unlock:hover { background: #5a6268; }
+        .auth-error { color: #d32f2f; font-size: 0.85rem; margin-top: 10px; display: none; }
+
+        /* KHUNG CAMERA NHẬN DIỆN KHUÔN MẶT */
+        #faceUnlockContainer { display: none; margin-top: 15px; text-align: center; }
+        #faceVideo { width: 100%; max-height: 240px; background: #000; border-radius: 8px; object-fit: cover; }
+
+        /* HEADER */
+        .app-header { background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)); color: white; padding: 12px 20px; position: sticky; top: 0; z-index: 100; box-shadow: var(--shadow-md); }
+        .header-content { max-width: 1300px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .header-title-box { display: flex; flex-direction: column; }
+        .header-title-box h1 { font-size: 1.2rem; font-weight: 700; line-height: 1.2; text-transform: uppercase; letter-spacing: 0.5px; }
+        .header-title-box p { font-size: 0.85rem; opacity: 0.9; font-weight: 400; }
+        .header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+        /* BUTTONS */
+        .btn { padding: 8px 16px; border: none; border-radius: 6px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: var(--transition); font-size: 0.9rem; text-decoration: none; }
+        .btn:active { transform: scale(0.97); }
+        .btn-header { background: rgba(255, 255, 255, 0.2); color: white; }
+        .btn-header:hover { background: rgba(255, 255, 255, 0.3); }
+        .btn-accent { background: var(--accent-color); color: white; }
+        .btn-accent:hover { background: #218838; }
+        .btn-primary { background: var(--primary-color); color: white; }
+        .btn-secondary { background: #6c757d; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-danger:hover { background: #bd2130; }
+        .btn-warning { background: #ff9800; color: white; }
+        .btn-warning:hover { background: #e68a00; }
+        .btn-outline { border: 1px solid var(--primary-color); color: var(--primary-color); background: transparent; }
+        .btn-sm { padding: 4px 8px; font-size: 0.8rem; }
+        
+        .btn-call { background: #28a745; color: white !important; text-decoration: none; padding: 4px 10px; border-radius: 4px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 5px; font-weight: 500; }
+        .btn-call:hover { background: #218838; }
+
+        /* CONTAINER */
+        .app-container { max-width: 1300px; margin: 20px auto; padding: 0 15px; }
+        .card { background: var(--card-bg); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow-sm); margin-bottom: 20px; }
+
+        /* STAT CARDS */
+        .stat-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 20px; }
+        .stat-card { background: white; padding: 14px; border-radius: var(--radius); display: flex; align-items: center; gap: 12px; box-shadow: var(--shadow-sm); }
+        .stat-icon { width: 46px; height: 46px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.3rem; flex-shrink: 0; }
+        .bg-blue { background: #1976D2; } 
+        .bg-green { background: #2e7d32; } 
+        .bg-cyan { background: #0288d1; } 
+        .bg-pink { background: #e91e63; } 
+        .bg-orange { background: #ef6c00; } 
+        .bg-purple { background: #8e24aa; }
+        .stat-info { display: flex; flex-direction: column; }
+        .stat-value { font-size: 1.4rem; font-weight: 700; line-height: 1.2; }
+        .stat-label { font-size: 0.8rem; color: var(--text-muted); }
+
+        /* SEARCH & FILTER */
+        .search-box { position: relative; margin-bottom: 12px; }
+        .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
+        .search-box input { width: 100%; padding: 12px 35px 12px 38px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem; outline: none; transition: var(--transition); }
+        .search-box input:focus { border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.15); }
+        
+        .advanced-search-panel { background: #f8f9fa; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 15px; display: none; }
+        .advanced-search-panel.show { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
+
+        .filter-controls { display: flex; flex-wrap: wrap; gap: 15px; align-items: center; justify-content: space-between; }
+        .filter-left { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; flex: 1; }
+        .filter-group { display: flex; align-items: center; gap: 6px; min-width: 180px; }
+        .filter-group select { width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border-color); outline: none; }
+
+        /* HỘ GIA ĐÌNH CARD LIST */
+        .grid-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 15px; }
+        .ho-gia-dinh-card { background: white; border-radius: var(--radius); padding: 15px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; justify-content: space-between; transition: var(--transition); border-left: 5px solid var(--primary-color); }
+        .ho-gia-dinh-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
+        
+        .ho-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 10px; }
+        .ho-title h3 { font-size: 1.1rem; color: var(--primary-color); margin-bottom: 2px; }
+        .ho-title p { font-size: 0.85rem; color: var(--text-muted); }
+        .badge-soluong { background: #e3f2fd; color: var(--primary-color); padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
+
+        .ho-body { font-size: 0.9rem; margin-bottom: 12px; }
+        .ho-body p { margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+        .member-preview-list { background: #f8f9fa; padding: 8px; border-radius: 6px; margin-top: 8px; font-size: 0.85rem; color: var(--text-muted); }
+        
+        .card-actions { display: flex; gap: 8px; justify-content: flex-end; border-top: 1px solid var(--border-color); padding-top: 10px; flex-wrap: wrap; }
+
+        /* PHÂN TRANG */
+        .pagination-container { display: flex; justify-content: center; gap: 5px; margin-top: 20px; }
+        .page-btn { padding: 6px 12px; border: 1px solid var(--border-color); background: white; border-radius: 4px; cursor: pointer; }
+        .page-btn.active { background: var(--primary-color); color: white; border-color: var(--primary-color); }
+
+        /* MODAL */
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); overflow-y: auto; }
+        .modal-content { background: white; margin: 3% auto; border-radius: var(--radius); box-shadow: var(--shadow-md); animation: fadeIn 0.3s; overflow: hidden; }
+        .modal-md { width: 90%; max-width: 750px; }
+        .modal-lg { width: 95%; max-width: 1050px; }
+        .modal-header { background: var(--primary-color); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
+        .close-modal { font-size: 1.5rem; cursor: pointer; color: white; }
+        .modal-body { padding: 20px; max-height: 80vh; overflow-y: auto; }
+
+        /* DETAILS */
+        .detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
+        .member-detail-item { background: #f8f9fa; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); }
+        .member-detail-item label { font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 2px; }
+        .member-detail-item span { font-weight: 500; font-size: 0.95rem; }
+
+        .table-responsive { overflow-x: auto; margin-top: 15px; }
+        .custom-table { width: 100%; border-collapse: collapse; min-width: 600px; }
+        .custom-table th, .custom-table td { border: 1px solid var(--border-color); padding: 8px 12px; font-size: 0.85rem; text-align: left; vertical-align: middle; }
+        .custom-table th { background: #f1f3f5; }
+        .table-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid #ccc; cursor: pointer; }
+
+        /* FORM */
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+        .full-width { grid-column: 1 / -1; }
+        .form-group { display: flex; flex-direction: column; gap: 4px; }
+        .form-group label { font-size: 0.85rem; font-weight: 500; }
+        .form-group input, .form-group select, .form-group textarea { padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; outline: none; }
+        .required { color: red; }
+        
+        .avatar-upload-section { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 15px; background: #fafafa; padding: 15px; border-radius: 8px; border: 1px dashed var(--border-color); }
+        .avatar-preview img { width: 90px; height: 90px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary-color); cursor: pointer; }
+        .form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
+
+        /* LIGHTBOX */
+        .lightbox-modal { display: none; position: fixed; z-index: 3000; padding-top: 60px; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.9); text-align: center; }
+        .lightbox-content { max-width: 90%; max-height: 80vh; border-radius: 8px; border: 2px solid white; }
+        .lightbox-close { position: absolute; top: 20px; right: 30px; color: #f1f1f1; font-size: 40px; font-weight: bold; cursor: pointer; }
+
+        /* TOAST */
+        .toast { position: fixed; bottom: 20px; right: 20px; background: #323232; color: white; padding: 12px 20px; border-radius: 6px; display: none; align-items: center; gap: 15px; z-index: 2000; box-shadow: var(--shadow-md); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <!-- MÀN HÌNH MẬT KHẨU & KHUÔN MẶT BẢO MẬT -->
+    <div id="authOverlay" class="auth-overlay">
+        <div class="auth-card">
+            <i class="fa-solid fa-shield-halved lock-icon"></i>
+            <h2 id="authTitle">Bảo Mật Ứng Dụng</h2>
+            <p id="authDesc">Nhập mật khẩu hoặc quét khuôn mặt để tiếp tục.</p>
+            <input type="password" id="authPasswordInput" placeholder="Nhập mật khẩu..." autocomplete="off">
+            <input type="password" id="authConfirmPasswordInput" placeholder="Xác nhận mật khẩu..." autocomplete="off" style="display:none;">
+            
+            <button class="btn-lock" id="btnAuthSubmit"><i class="fa-solid fa-key"></i> Xác nhận mật khẩu</button>
+            <button class="btn-lock btn-face-unlock" id="btnFaceUnlockToggle"><i class="fa-solid fa-face-smile"></i> Mở khóa bằng khuôn mặt</button>
+
+            <!-- Khung camera nhận diện khuôn mặt -->
+            <div id="faceUnlockContainer">
+                <video id="faceVideo" autoplay playsinline muted></video>
+                <div style="margin-top: 8px; display: flex; justify-content: center; gap: 6px;">
+                    <button type="button" class="btn btn-sm btn-outline" id="btnSwitchAuthCamera"><i class="fa-solid fa-camera-rotate"></i> Đổi Camera</button>
+                </div>
+                <p id="faceStatusMsg" style="font-size: 0.8rem; margin-top: 8px; color: #1565C0; font-weight: 500;">Đang tải mô hình nhận diện...</p>
+            </div>
+
+            <div id="authError" class="auth-error">Mật khẩu không hợp lệ!</div>
+        </div>
+    </div>
+
+    <!-- APP HEADER -->
+    <header class="app-header">
+        <div class="header-content">
+            <div class="header-title-box">
+                <h1>Quản lý cư trú Tổ dân phố 7 Thành Công</h1>
+                <p>Công an phường Buôn Ma Thuột</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-header btn-warning" id="btnOpenStatModal" title="Xem báo cáo thống kê chi tiết">
+                    <i class="fa-solid fa-chart-pie"></i> <span>Thống Kê</span>
+                </button>
+                <button class="btn btn-header" id="btnSetupFace" title="Đăng ký khuôn mặt mở khóa">
+                    <i class="fa-solid fa-id-card-clip"></i> <span>ĐK Khuôn Mặt</span>
+                </button>
+                <button class="btn btn-header" id="btnChangePass" title="Đổi mật khẩu">
+                    <i class="fa-solid fa-key"></i> <span>Đổi MK</span>
+                </button>
+                <label for="excelFileInput" class="btn btn-header" title="Nhập Excel" style="cursor: pointer;">
+                    <i class="fa-solid fa-file-import"></i> <span>Nhập Excel</span>
+                </label>
+                <input type="file" id="excelFileInput" accept=".xlsx, .xls" style="display: none;">
+                
+                <button class="btn btn-header" id="btnExportExcel" title="Xuất Excel">
+                    <i class="fa-solid fa-file-export"></i> <span>Xuất Excel</span>
+                </button>
+                <button class="btn btn-header btn-accent" id="btnAddMain">
+                    <i class="fa-solid fa-user-plus"></i> <span>Thêm Nhân Khẩu</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="app-container">
+
+        <!-- THỐNG KÊ TỔNG QUAN -->
+        <section class="stat-cards">
+            <div class="stat-card">
+                <div class="stat-icon bg-blue"><i class="fa-solid fa-house-chimney"></i></div>
+                <div class="stat-info">
+                    <span class="stat-value" id="statTotalHoGiaDinh">0</span>
+                    <span class="stat-label">Tổng số hộ gia đình</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-green"><i class="fa-solid fa-users"></i></div>
+                <div class="stat-info">
+                    <span class="stat-value" id="statTotalNhanKhau">0</span>
+                    <span class="stat-label">Tổng nhân khẩu</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-cyan"><i class="fa-solid fa-mars"></i></div>
+                <div class="stat-info">
+                    <span class="stat-value" id="statTotalNam">0</span>
+                    <span class="stat-label">Tổng số nam</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-pink"><i class="fa-solid fa-venus"></i></div>
+                <div class="stat-info">
+                    <span class="stat-value" id="statTotalNu">0</span>
+                    <span class="stat-label">Tổng số nữ</span>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon bg-orange"><i class="fa-solid fa-building-flag"></i></div>
+                <div class="stat-info">
+                    <span class="stat-value" id="statTotalTDP">0</span>
+                    <span class="stat-label">Tổ dân phố</span>
+                </div>
+            </div>
+        </section>
+
+        <!-- SEARCH & FILTER -->
+        <section class="filter-section card">
+            <div class="search-box">
+                <i class="fa-solid fa-magnifying-glass search-icon"></i>
+                <input type="text" id="searchInput" placeholder="Tìm theo tên chủ hộ, Số hộ khẩu, số nhà, căn cước...">
+            </div>
+
+            <!-- Bộ lọc nâng cao -->
+            <div id="advancedSearchPanel" class="advanced-search-panel">
+                <div class="form-group">
+                    <label>Lọc theo Dân tộc</label>
+                    <input type="text" id="advFilterDanToc" placeholder="VD: Kinh, Ê Đê...">
+                </div>
+                <div class="form-group">
+                    <label>Lọc theo Tôn giáo</label>
+                    <input type="text" id="advFilterTonGiao" placeholder="VD: Không, Công giáo...">
+                </div>
+                <div class="form-group" style="display: flex; align-items: flex-end;">
+                    <button type="button" class="btn btn-secondary w-100" id="btnResetAdvSearch" style="width: 100%;">Xóa lọc nâng cao</button>
+                </div>
+            </div>
+
+            <div class="filter-controls">
+                <div class="filter-left">
+                    <div class="filter-group">
+                        <label><i class="fa-solid fa-filter"></i> TDP:</label>
+                        <select id="filterTDP"><option value="">-- Tất cả TDP --</option></select>
+                    </div>
+                    <div class="filter-group">
+                        <label><i class="fa-solid fa-sort"></i> Sắp xếp:</label>
+                        <select id="sortOption">
+                            <option value="AZ">Chủ hộ A → Z</option>
+                            <option value="ZA">Chủ hộ Z → A</option>
+                            <option value="COUNT_DESC">Số thành viên nhiều nhất</option>
+                        </select>
+                    </div>
+                    <button class="btn btn-outline btn-sm" id="btnToggleAdvanced">
+                        <i class="fa-solid fa-sliders"></i> Bộ lọc nâng cao
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- DANH SÁCH HỘ GIA ĐÌNH -->
+        <section class="list-section">
+            <div id="hoGiaDinhContainer" class="grid-cards"></div>
+            <div class="pagination-container" id="pagination"></div>
+        </section>
+
+    </main>
+
+    <!-- MODAL FORM THỐNG KÊ CHI TIẾT -->
+    <div id="modalStat" class="modal">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-chart-pie"></i> Báo Cáo Thống Kê Tổng Hợp Cư Trú</h2>
+                <span class="close-modal" onclick="closeModal('modalStat')">&times;</span>
+            </div>
+            <div class="modal-body" id="statModalBody"></div>
+        </div>
+    </div>
+
+    <!-- MODAL CHI TIẾT HỘ GIA ĐÌNH (GỒM CÁC THÀNH VIÊN) -->
+    <div id="modalDetail" class="modal">
+        <div class="modal-content modal-lg">
+            <div class="modal-header">
+                <h2><i class="fa-solid fa-house-user"></i> Chi Tiết Hộ Gia Đình</h2>
+                <span class="close-modal" onclick="closeModal('modalDetail')">&times;</span>
+            </div>
+            <div class="modal-body" id="detailBody"></div>
+        </div>
+    </div>
+
+    <!-- MODAL FORM THÊM / SỬA NHÂN KHẨU -->
+    <div id="modalForm" class="modal">
+        <div class="modal-content modal-md">
+            <div class="modal-header">
+                <h2 id="formTitle"><i class="fa-solid fa-user-pen"></i> Thêm Nhân Khẩu Mới</h2>
+                <span class="close-modal" onclick="closeModal('modalForm')">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="nhanKhauForm">
+                    <input type="hidden" id="editIndex" value="-1">
+                    
+                    <div class="avatar-upload-section">
+                        <div class="avatar-preview">
+                            <img id="imgPreview" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24'><path fill='%23ccc' d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/></svg>" alt="Avatar" onclick="openLightbox(this.src)">
+                        </div>
+
+                        <!-- KHUNG CAMERA TRỰC TIẾP -->
+                        <div id="cameraLiveContainer" style="display:none; text-align:center; width: 100%; margin-top: 10px;">
+                            <video id="cameraVideo" autoplay playsinline muted style="width:100%; max-height:280px; background:#000; border-radius:8px; object-fit:cover;"></video>
+                            <div style="margin-top: 8px; display:flex; gap:10px; justify-content:center;">
+                                <button type="button" class="btn btn-sm btn-accent" id="btnCaptureNow"><i class="fa-solid fa-camera"></i> Bấm Chụp Ảnh</button>
+                                <button type="button" class="btn btn-sm btn-secondary" id="btnCloseCamera"><i class="fa-solid fa-xmark"></i> Đóng Camera</button>
+                            </div>
+                        </div>
+                        <canvas id="cameraCanvas" style="display:none;"></canvas>
+
+                        <div class="avatar-buttons" style="display:flex; gap:6px; flex-wrap:wrap; justify-content:center; margin-top: 8px;">
+                            <button type="button" class="btn btn-sm btn-primary" id="btnOpenLiveCam"><i class="fa-solid fa-video"></i> Mở Camera Trực Tiếp</button>
+                            <label for="cameraBackInput" class="btn btn-sm btn-outline" style="cursor: pointer;"><i class="fa-solid fa-camera"></i> Cam Sau</label>
+                            <input type="file" id="cameraBackInput" accept="image/*" capture="environment" style="display:none;">
+
+                            <label for="cameraFrontInput" class="btn btn-sm btn-outline" style="cursor: pointer;"><i class="fa-solid fa-camera-rotate"></i> Cam Trước</label>
+                            <input type="file" id="cameraFrontInput" accept="image/*" capture="user" style="display:none;">
+
+                            <label for="galleryInput" class="btn btn-sm btn-outline" style="cursor: pointer;"><i class="fa-solid fa-image"></i> Thư viện</label>
+                            <input type="file" id="galleryInput" accept="image/*" style="display:none;">
+                        </div>
+                        <input type="hidden" id="formBase64Image">
+                    </div>
+
+                    <div class="form-grid">
+                        <div class="form-group">
+                            <label>Họ và Tên <span class="required">*</span></label>
+                            <input type="text" id="formHoTen" required placeholder="Nguyễn Văn A">
+                        </div>
+                        <div class="form-group">
+                            <label>Số Hộ Khẩu (SHK) <span class="required">*</span></label>
+                            <input type="text" id="formSHK" required placeholder="HK-001">
+                        </div>
+                        <div class="form-group">
+                            <label>Ngày Tháng Năm Sinh</label>
+                            <input type="text" id="formNamSinh" placeholder="DD/MM/YYYY hoặc YYYY">
+                        </div>
+                        <div class="form-group">
+                            <label>Giới Tính</label>
+                            <select id="formGioiTinh">
+                                <option value="Nam">Nam</option>
+                                <option value="Nữ">Nữ</option>
+                                <option value="Khác">Khác</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Quan Hệ Với Chủ Hộ <span class="required">*</span></label>
+                            <input type="text" id="formQH" placeholder="Chủ hộ / Vợ / Con..." required>
+                        </div>
+                        <div class="form-group">
+                            <label>Họ Tên Chủ Hộ <span class="required">*</span></label>
+                            <input type="text" id="formHoTenCH" required placeholder="Nhập tên Chủ Hộ">
+                        </div>
+                        <div class="form-group">
+                            <label>Số Căn Cước (CCCD/CMND)</label>
+                            <input type="text" id="formCanCuoc" placeholder="001084012345">
+                        </div>
+                        <div class="form-group">
+                            <label>Số Điện Thoại</label>
+                            <input type="tel" id="formSoDT" placeholder="0912345678">
+                        </div>
+                        <div class="form-group">
+                            <label>Dân Tộc</label>
+                            <input type="text" id="formDanToc" placeholder="Kinh">
+                        </div>
+                        <div class="form-group">
+                            <label>Tôn Giáo</label>
+                            <input type="text" id="formTonGiao" placeholder="Không">
+                        </div>
+                        <div class="form-group">
+                            <label>Tổ Dân Phố (TDP) <span class="required">*</span></label>
+                            <input type="text" id="formTDP" required placeholder="TDP Số 7">
+                        </div>
+                        <div class="form-group">
+                            <label>Quê Quán</label>
+                            <input type="text" id="formQueQuan" placeholder="Đắk Lắk">
+                        </div>
+                        <div class="form-group">
+                            <label>Số Nhà</label>
+                            <input type="text" id="formSoNha" placeholder="Số 12">
+                        </div>
+                        <div class="form-group full-width">
+                            <label>Nơi Thường Trú <span class="required">*</span></label>
+                            <input type="text" id="formThuongTru" required placeholder="Phường Buôn Ma Thuột, tỉnh Đắk Lắk">
+                        </div>
+                        <div class="form-group full-width">
+                            <label>Nơi Cư Trú / Hiện Tại</label>
+                            <input type="text" id="formCuTru" placeholder="Số 12 Phường Buôn Ma Thuột">
+                        </div>
+                        <div class="form-group">
+                            <label>Tên Cha</label>
+                            <input type="text" id="formTenCha" placeholder="Họ tên cha">
+                        </div>
+                        <div class="form-group">
+                            <label>Tên Mẹ</label>
+                            <input type="text" id="formTenMe" placeholder="Họ tên mẹ">
+                        </div>
+                        <div class="form-group full-width">
+                            <label>Ghi Chú</label>
+                            <textarea id="formGhiChu" rows="2" placeholder="Ghi chú thêm..."></textarea>
+                        </div>
+                    </div>
+
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('modalForm')">Hủy</button>
+                        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Lưu Dữ Liệu</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- LIGHTBOX -->
+    <div id="lightboxModal" class="lightbox-modal" onclick="closeLightbox()">
+        <span class="lightbox-close">&times;</span>
+        <img class="lightbox-content" id="lightboxImg">
+    </div>
+
+    <!-- TOAST NOTIFICATION -->
+    <div id="toast" class="toast"><i class="fa-solid fa-circle-check" style="color: #28a745;"></i> <span id="toastMsg">Thành công!</span></div>
+
+    <!-- JAVASCRIPT LOGIC -->
+    <script>
+        // DỮ LIỆU MẪU BAN ĐẦU
+        let nhanKhauData = [
+            {
+                stt: 1, hoTen: "Nguyễn Văn An", shk: "HK-001", namSinh: "15/05/1980", gioiTinh: "Nam",
+                quanHe: "Chủ hộ", hoTenCH: "Nguyễn Văn An", canCuoc: "066080001234", soDT: "0905123456",
+                danToc: "Kinh", tonGiao: "Không", tdp: "TDP 7", queQuan: "Đắk Lắk", soNha: "15",
+                thuongTru: "15 Lê Duẩn, Tổ 7, Phường Buôn Ma Thuột", cuTru: "15 Lê Duẩn, Phường Buôn Ma Thuột",
+                tenCha: "Nguyễn Văn Bình", tenMe: "Trần Thị Hoa", ghiChu: "", avatar: ""
+            },
+            {
+                stt: 2, hoTen: "Lê Thị Mai", shk: "HK-001", namSinh: "20/10/1985", gioiTinh: "Nữ",
+                quanHe: "Vợ", hoTenCH: "Nguyễn Văn An", canCuoc: "066185005678", soDT: "0905654321",
+                danToc: "Kinh", tonGiao: "Phật giáo", tdp: "TDP 7", queQuan: "Quảng Nam", soNha: "15",
+                thuongTru: "15 Lê Duẩn, Tổ 7, Phường Buôn Ma Thuột", cuTru: "15 Lê Duẩn, Phường Buôn Ma Thuột",
+                tenCha: "Lê Văn Hùng", tenMe: "Phạm Thị Lan", ghiChu: "", avatar: ""
+            },
+            {
+                stt: 3, hoTen: "Y Jút Niê", shk: "HK-002", namSinh: "12/02/1990", gioiTinh: "Nam",
+                quanHe: "Chủ hộ", hoTenCH: "Y Jút Niê", canCuoc: "066090009999", soDT: "0988111222",
+                danToc: "Ê Đê", tonGiao: "Tin lành", tdp: "TDP 7", queQuan: "Đắk Lắk", soNha: "42",
+                thuongTru: "42 Y Jút, Tổ 7, Phường Buôn Ma Thuột", cuTru: "42 Y Jút, Phường Buôn Ma Thuột",
+                tenCha: "Ama H'Wing", tenMe: "H'Dắt Niê", ghiChu: "", avatar: ""
+            }
+        ];
+
+        let appPassword = localStorage.getItem("bmt_app_pass") || "123456";
+        let registeredFaceDescriptor = JSON.parse(localStorage.getItem("bmt_face_desc")) || null;
+        let isFaceAuthActive = false;
+        let authMediaStream = null;
+        let formMediaStream = null;
+        let currentPage = 1;
+        const itemsPerPage = 6;
+        let activeCameraId = 'environment';
+
+        document.addEventListener("DOMContentLoaded", () => {
+            loadFromLocalStorage();
+            initAuthSystem();
+            initEventListeners();
+            renderApp();
+        });
+
+        function loadFromLocalStorage() {
+            const saved = localStorage.getItem("bmt_nhankhau_data");
+            if (saved) {
+                try { nhanKhauData = JSON.parse(saved); } catch(e) {}
+            }
+        }
+
+        function saveToLocalStorage() {
+            localStorage.setItem("bmt_nhankhau_data", JSON.stringify(nhanKhauData));
+        }
+
+        // HỆ THỐNG XÁC THỰC BẢO MẬT & FACE-API
+        function initAuthSystem() {
+            const overlay = document.getElementById("authOverlay");
+            const passInput = document.getElementById("authPasswordInput");
+            const confirmPassInput = document.getElementById("authConfirmPasswordInput");
+            const btnSubmit = document.getElementById("btnAuthSubmit");
+            const btnFaceToggle = document.getElementById("btnFaceUnlockToggle");
+            const errDiv = document.getElementById("authError");
+            
+            let isSetupMode = !localStorage.getItem("bmt_app_pass");
+            if (isSetupMode) {
+                document.getElementById("authTitle").innerText = "Tạo Mật Khẩu Lần Đầu";
+                document.getElementById("authDesc").innerText = "Vui lòng thiết lập mật khẩu bảo vệ ứng dụng cư trú.";
+                confirmPassInput.style.display = "block";
+                btnSubmit.innerHTML = '<i class="fa-solid fa-check"></i> Thiết lập mật khẩu';
+            }
+
+            btnSubmit.onclick = () => {
+                const val = passInput.value.trim();
+                if (isSetupMode) {
+                    const confirmVal = confirmPassInput.value.trim();
+                    if (val.length < 4) {
+                        errDiv.innerText = "Mật khẩu phải có ít nhất 4 ký tự!";
+                        errDiv.style.display = "block";
+                        return;
+                    }
+                    if (val !== confirmVal) {
+                        errDiv.innerText = "Mật khẩu xác nhận không khớp!";
+                        errDiv.style.display = "block";
+                        return;
+                    }
+                    appPassword = val;
+                    localStorage.setItem("bmt_app_pass", appPassword);
+                    stopAuthCamera();
+                    overlay.style.display = "none";
+                    showToast("Thiết lập mật khẩu thành công!");
+                } else {
+                    if (val === appPassword) {
+                        stopAuthCamera();
+                        overlay.style.display = "none";
+                        showToast("Xác thực thành công!");
+                    } else {
+                        errDiv.innerText = "Mật khẩu không chính xác!";
+                        errDiv.style.display = "block";
+                    }
+                }
+            };
+
+            btnFaceToggle.onclick = async () => {
+                const container = document.getElementById("faceUnlockContainer");
+                if (container.style.display === "block") {
+                    stopAuthCamera();
+                    container.style.display = "none";
+                    return;
+                }
+                container.style.display = "block";
+                await startAuthCamera(activeCameraId);
+                loadFaceApiModelsAndVerify();
+            };
+
+            document.getElementById("btnSwitchAuthCamera").onclick = async () => {
+                activeCameraId = activeCameraId === 'environment' ? 'user' : 'environment';
+                await startAuthCamera(activeCameraId);
+            };
+
+            document.getElementById("btnChangePass").onclick = () => {
+                const newP = prompt("Nhập mật khẩu mới (tối thiểu 4 ký tự):");
+                if (newP && newP.trim().length >= 4) {
+                    appPassword = newP.trim();
+                    localStorage.setItem("bmt_app_pass", appPassword);
+                    showToast("Đổi mật khẩu thành công!");
+                } else if (newP !== null) {
+                    alert("Mật khẩu không hợp lệ!");
+                }
+            };
+
+            document.getElementById("btnSetupFace").onclick = async () => {
+                if (confirm("Bạn muốn đăng ký khuôn mặt hiện tại để mở khóa ứng dụng?")) {
+                    await registerCurrentFace();
+                }
+            };
+        }
+
+        async function startAuthCamera(facingMode) {
+            stopAuthCamera();
+            try {
+                authMediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facingMode } });
+                const video = document.getElementById("faceVideo");
+                video.srcObject = authMediaStream;
+            } catch (e) {
+                alert("Không thể mở camera: " + e.message);
+            }
+        }
+
+        function stopAuthCamera() {
+            isFaceAuthActive = false;
+            if (authMediaStream) {
+                authMediaStream.getTracks().forEach(track => track.stop());
+                authMediaStream = null;
+            }
+        }
+
+        async function loadFaceApiModelsAndVerify() {
+            const statusMsg = document.getElementById("faceStatusMsg");
+            statusMsg.innerText = "Đang tải mô hình nhận diện...";
+            try {
+                const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model/';
+                await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
+                await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+                await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+                statusMsg.innerText = "Đang quét khuôn mặt...";
+
+                isFaceAuthActive = true;
+                verifyFaceLoop();
+            } catch (e) {
+                statusMsg.innerText = "Lỗi tải mô hình nhận diện!";
+            }
+        }
+
+        async function verifyFaceLoop() {
+            if (!isFaceAuthActive) return;
+            const video = document.getElementById("faceVideo");
+            const statusMsg = document.getElementById("faceStatusMsg");
+
+            if (!video || video.paused || video.ended) {
+                if (isFaceAuthActive) setTimeout(verifyFaceLoop, 200);
+                return;
+            }
+
+            try {
+                const detection = await faceapi.detectSingleFace(video).withFaceLandmarks().withFaceDescriptor();
+                if (detection) {
+                    if (!registeredFaceDescriptor) {
+                        statusMsg.innerText = "Chưa đăng ký khuôn mặt nào trong hệ thống!";
+                    } else {
+                        const distance = faceapi.euclideanDistance(detection.descriptor, new Float32Array(registeredFaceDescriptor));
+                        if (distance < 0.45) {
+                            statusMsg.innerText = "Nhận diện thành công! Đang mở khóa...";
+                            isFaceAuthActive = false;
+                            setTimeout(() => {
+                                stopAuthCamera();
+                                document.getElementById("authOverlay").style.display = "none";
+                                showToast("Đăng nhập bằng khuôn mặt thành công!");
+                            }, 800);
+                            return;
+                        } else {
+                            statusMsg.innerText = "Không khớp khuôn mặt (" + distance.toFixed(2) + ")";
+                        }
+                    }
+                } else {
+                    statusMsg.innerText = "Không tìm thấy khuôn mặt...";
+                }
+            } catch (err) {
+                // Bỏ qua lỗi khung hình ngắt quãng
+            }
+            if (isFaceAuthActive) setTimeout(verifyFaceLoop, 1000);
+        }
+
+        async function registerCurrentFace() {
+            try {
+                const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model/';
+                await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
+                await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
+                await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
+
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                const video = document.createElement("video");
+                video.srcObject = stream;
+                await video.play();
+
+                setTimeout(async () => {
+                    const detection = await faceapi.detectSingleFace(video).withFaceLandmarks().withFaceDescriptor();
+                    stream.getTracks().forEach(t => t.stop());
+                    if (detection) {
+                        registeredFaceDescriptor = Array.from(detection.descriptor);
+                        localStorage.setItem("bmt_face_desc", JSON.stringify(registeredFaceDescriptor));
+                        showToast("Đăng ký khuôn mặt thành công!");
+                    } else {
+                        alert("Không phát hiện được khuôn mặt để đăng ký. Hãy thử lại!");
+                    }
+                }, 1500);
+            } catch (e) {
+                alert("Lỗi đăng ký khuôn mặt: " + e.message);
+            }
+        }
+
+        // SỰ KIỆN & GIAO DIỆN
+        function initEventListeners() {
+            document.getElementById("searchInput").oninput = () => { currentPage = 1; renderApp(); };
+            document.getElementById("filterTDP").onchange = () => { currentPage = 1; renderApp(); };
+            document.getElementById("sortOption").onchange = () => { renderApp(); };
+
+            document.getElementById("btnToggleAdvanced").onclick = () => {
+                const panel = document.getElementById("advancedSearchPanel");
+                panel.classList.toggle("show");
+            };
+            document.getElementById("advFilterDanToc").oninput = () => { currentPage = 1; renderApp(); };
+            document.getElementById("advFilterTonGiao").oninput = () => { currentPage = 1; renderApp(); };
+            document.getElementById("btnResetAdvSearch").onclick = () => {
+                document.getElementById("advFilterDanToc").value = "";
+                document.getElementById("advFilterTonGiao").value = "";
+                currentPage = 1;
+                renderApp();
+            };
+
+            document.getElementById("btnAddMain").onclick = () => openFormModal();
+            document.getElementById("btnOpenStatModal").onclick = () => openStatModal();
+
+            document.getElementById("nhanKhauForm").onsubmit = (e) => {
+                e.preventDefault();
+                saveFormData();
+            };
+
+            document.getElementById("galleryInput").onchange = (e) => handleImageSelect(e);
+            document.getElementById("cameraFrontInput").onchange = (e) => handleImageSelect(e);
+            document.getElementById("cameraBackInput").onchange = (e) => handleImageSelect(e);
+
+            document.getElementById("btnOpenLiveCam").onclick = async () => {
+                const container = document.getElementById("cameraLiveContainer");
+                container.style.display = "block";
+                try {
+                    formMediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                    document.getElementById("cameraVideo").srcObject = formMediaStream;
+                } catch (e) {
+                    alert("Không mở được camera: " + e.message);
+                }
+            };
+
+            document.getElementById("btnCloseCamera").onclick = () => stopFormCamera();
+
+            document.getElementById("btnCaptureNow").onclick = () => {
+                const video = document.getElementById("cameraVideo");
+                const canvas = document.getElementById("cameraCanvas");
+                canvas.width = video.videoWidth || 640;
+                canvas.height = video.videoHeight || 480;
+                const ctx = canvas.getContext("2d");
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                const dataUrl = canvas.toDataURL("image/jpeg");
+                document.getElementById("imgPreview").src = dataUrl;
+                document.getElementById("formBase64Image").value = dataUrl;
+                stopFormCamera();
+            };
+
+            document.getElementById("excelFileInput").onchange = (e) => importExcel(e);
+            document.getElementById("btnExportExcel").onclick = () => exportExcel();
+        }
+
+        function stopFormCamera() {
+            if (formMediaStream) {
+                formMediaStream.getTracks().forEach(t => t.stop());
+                formMediaStream = null;
+            }
+            document.getElementById("cameraLiveContainer").style.display = "none";
+        }
+
+        function handleImageSelect(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                document.getElementById("imgPreview").src = event.target.result;
+                document.getElementById("formBase64Image").value = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // HÀM HỖ TRỢ TÍNH TUỔI CHÍNH XÁC
+        function calculateAge(namSinhStr) {
+            if (!namSinhStr) return null;
+            let year = null;
+            let month = 1;
+            let day = 1;
+
+            const parts = namSinhStr.trim().split(/[\/\-]/);
+            if (parts.length === 3) {
+                day = parseInt(parts[0], 10);
+                month = parseInt(parts[1], 10);
+                year = parseInt(parts[2], 10);
+            } else if (parts.length === 1) {
+                year = parseInt(parts[0], 10);
+            }
+
+            if (!year || isNaN(year)) return null;
+
+            const today = new Date();
+            let age = today.getFullYear() - year;
+            const currentMonth = today.getMonth() + 1;
+            const currentDay = today.getDate();
+
+            if (parts.length === 3) {
+                if (currentMonth < month || (currentMonth === month && currentDay < day)) {
+                    age--;
+                }
+            }
+            return age;
+        }
+
+        // GỘP NHÓM THEO HỘ GIA ĐÌNH
+        function getGroupedHouseholds() {
+            const keyword = document.getElementById("searchInput").value.toLowerCase().trim();
+            const filterTDP = document.getElementById("filterTDP").value;
+            const sortOpt = document.getElementById("sortOption").value;
+            const advDanToc = document.getElementById("advFilterDanToc").value.toLowerCase().trim();
+            const advTonGiao = document.getElementById("advFilterTonGiao").value.toLowerCase().trim();
+
+            const householdsMap = {};
+            
+            nhanKhauData.forEach(item => {
+                const shkKey = (item.shk && item.shk.trim() !== "") ? item.shk.trim() : "KHAC_" + (item.hoTenCH || item.hoTen);
+                
+                if (!householdsMap[shkKey]) {
+                    householdsMap[shkKey] = {
+                        shk: item.shk || "Chưa có SHK",
+                        hoTenCH: item.hoTenCH || "Chưa xác định",
+                        tdp: item.tdp || "Chưa phân loại",
+                        soNha: item.soNha || "",
+                        thuongTru: item.thuongTru || "",
+                        members: []
+                    };
+                }
+                householdsMap[shkKey].members.push(item);
+                if (item.quanHe && item.quanHe.toLowerCase().includes("chủ hộ")) {
+                    householdsMap[shkKey].hoTenCH = item.hoTen;
+                    if (item.tdp) householdsMap[shkKey].tdp = item.tdp;
+                    if (item.thuongTru) householdsMap[shkKey].thuongTru = item.thuongTru;
+                }
+            });
+
+            let householdsArray = Object.values(householdsMap);
+
+            householdsArray = householdsArray.filter(house => {
+                const matchTDP = !filterTDP || house.tdp === filterTDP;
+                const matchKeyword = !keyword || 
+                    house.shk.toLowerCase().includes(keyword) ||
+                    house.hoTenCH.toLowerCase().includes(keyword) ||
+                    house.soNha.toLowerCase().includes(keyword) ||
+                    house.members.some(m => 
+                        (m.hoTen && m.hoTen.toLowerCase().includes(keyword)) ||
+                        (m.canCuoc && m.canCuoc.toLowerCase().includes(keyword)) ||
+                        (m.soDT && m.soDT.toLowerCase().includes(keyword))
+                    );
+
+                const matchDanTocTonGiao = house.members.some(m => {
+                    const matchDT = !advDanToc || (m.danToc && m.danToc.toLowerCase().includes(advDanToc));
+                    const matchTG = !advTonGiao || (m.tonGiao && m.tonGiao.toLowerCase().includes(advTonGiao));
+                    return matchDT && matchTG;
+                });
+
+                return matchTDP && matchKeyword && matchDanTocTonGiao;
+            });
+
+            householdsArray.sort((a, b) => {
+                if (sortOpt === 'AZ') return a.hoTenCH.localeCompare(b.hoTenCH, 'vi');
+                if (sortOpt === 'ZA') return b.hoTenCH.localeCompare(a.hoTenCH, 'vi');
+                if (sortOpt === 'COUNT_DESC') return b.members.length - a.members.length;
+                return 0;
+            });
+
+            return householdsArray;
+        }
+
+        function renderApp() {
+            updateDropdownFilters();
+            updateStatistics();
+
+            const households = getGroupedHouseholds();
+            const totalPages = Math.ceil(households.length / itemsPerPage) || 1;
+            if (currentPage > totalPages) currentPage = totalPages;
+
+            const start = (currentPage - 1) * itemsPerPage;
+            const paginatedHouseholds = households.slice(start, start + itemsPerPage);
+
+            const container = document.getElementById("hoGiaDinhContainer");
+            container.innerHTML = "";
+
+            if (paginatedHouseholds.length === 0) {
+                container.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding: 30px; color: var(--text-muted);">Không tìm thấy hộ gia đình phù hợp!</div>`;
+                document.getElementById("pagination").innerHTML = "";
+                return;
+            }
+
+            paginatedHouseholds.forEach(house => {
+                const card = document.createElement("div");
+                card.className = "ho-gia-dinh-card";
+                const memberNames = house.members.map(m => `${m.hoTen} (${m.quanHe})`).join(", ");
+
+                // Tạo key thực tế để truyền vào hàm xóa hộ (phòng trường hợp hộ chưa có số hộ khẩu)
+                const realShkKey = house.shk !== "Chưa có SHK" ? house.shk : "KHAC_" + house.hoTenCH;
+
+                card.innerHTML = `
+                    <div>
+                        <div class="ho-header">
+                            <div class="ho-title">
+                                <h3>Hộ: ${house.hoTenCH}</h3>
+                                <p><i class="fa-solid fa-id-badge"></i> SHK: <b>${house.shk}</b></p>
+                            </div>
+                            <span class="badge-soluong"><i class="fa-solid fa-users"></i> ${house.members.length} nhân khẩu</span>
+                        </div>
+                        <div class="ho-body">
+                            <p><i class="fa-solid fa-building-flag" style="color:var(--primary-color);"></i> <b>TDP:</b> ${house.tdp} | <b>Số nhà:</b> ${house.soNha || 'N/A'}</p>
+                            <p><i class="fa-solid fa-location-dot" style="color:var(--primary-color);"></i> <b>Địa chỉ:</b> ${house.thuongTru || 'N/A'}</p>
+                            <div class="member-preview-list">
+                                <b>Thành viên:</b> ${memberNames}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-actions">
+                        <button class="btn btn-sm btn-primary" onclick="openHouseholdDetail('${realShkKey}')"><i class="fa-solid fa-eye"></i> Xem</button>
+                        <button class="btn btn-sm btn-accent" onclick="openFormModalForHousehold('${house.shk}')"><i class="fa-solid fa-user-plus"></i> Thêm</button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteHousehold('${realShkKey}')"><i class="fa-solid fa-trash"></i> Xóa Hộ</button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+
+            renderPagination(totalPages);
+        }
+
+        function renderPagination(totalPages) {
+            const container = document.getElementById("pagination");
+            container.innerHTML = "";
+            for (let i = 1; i <= totalPages; i++) {
+                const btn = document.createElement("button");
+                btn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
+                btn.innerText = i;
+                btn.onclick = () => { currentPage = i; renderApp(); };
+                container.appendChild(btn);
+            }
+        }
+
+        function updateDropdownFilters() {
+            const tdpSet = new Set();
+            nhanKhauData.forEach(i => { if (i.tdp) tdpSet.add(i.tdp); });
+
+            const tdpSelect = document.getElementById("filterTDP");
+            const currentTDP = tdpSelect.value;
+            tdpSelect.innerHTML = '<option value="">-- Tất cả TDP --</option>';
+            Array.from(tdpSet).sort().forEach(t => {
+                tdpSelect.innerHTML += `<option value="${t}" ${t === currentTDP ? 'selected' : ''}>${t}</option>`;
+            });
+        }
+
+        function updateStatistics() {
+            const householdsMap = {};
+            nhanKhauData.forEach(i => {
+                const shkKey = (i.shk && i.shk.trim() !== "") ? i.shk.trim() : "KHAC_" + i.hoTen;
+                householdsMap[shkKey] = true;
+            });
+
+            document.getElementById("statTotalHoGiaDinh").innerText = Object.keys(householdsMap).length;
+            document.getElementById("statTotalNhanKhau").innerText = nhanKhauData.length;
+            
+            const namCount = nhanKhauData.filter(i => i.gioiTinh && i.gioiTinh.toLowerCase() === "nam").length;
+            document.getElementById("statTotalNam").innerText = namCount;
+            const nuCount = nhanKhauData.filter(i => i.gioiTinh && i.gioiTinh.toLowerCase() === "nữ").length;
+            document.getElementById("statTotalNu").innerText = nuCount;
+            
+            const tdpSet = new Set(nhanKhauData.map(i => i.tdp).filter(Boolean));
+            document.getElementById("statTotalTDP").innerText = tdpSet.size;
+        }
+
+        // XEM CHI TIẾT HỘ GIA ĐÌNH
+        function openHouseholdDetail(shkKey) {
+            const members = nhanKhauData.filter(x => {
+                const itemShkKey = (x.shk && x.shk.trim() !== "") ? x.shk.trim() : "KHAC_" + (x.hoTenCH || x.hoTen);
+                return itemShkKey === shkKey;
+            });
+            if (members.length === 0) return;
+
+            const houseInfo = members[0];
+
+            let html = `
+                <div style="margin-bottom: 15px; background: #f8f9fa; padding: 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+                    <div>
+                        <h3><i class="fa-solid fa-house"></i> Sổ hộ khẩu: <b>${houseInfo.shk || 'Chưa có'}</b></h3>
+                        <p style="margin-top: 5px;"><b>Chủ hộ:</b> ${houseInfo.hoTenCH} | <b>Tổ dân phố:</b> ${houseInfo.tdp} | <b>Số nhà:</b> ${houseInfo.soNha || 'N/A'}</p>
+                        <p style="margin-top: 3px;"><b>Nơi thường trú:</b> ${houseInfo.thuongTru || 'N/A'}</p>
+                    </div>
+                    <div>
+                        <button class="btn btn-sm btn-danger" onclick="deleteHousehold('${shkKey}')"><i class="fa-solid fa-trash"></i> Xóa Cả Hộ Này</button>
+                    </div>
+                </div>
+                <h4 style="margin-bottom: 10px;"><i class="fa-solid fa-users"></i> Danh sách thành viên trong hộ (${members.length})</h4>
+                <div class="table-responsive">
+                    <table class="custom-table">
+                        <thead>
+                            <tr>
+                                <th>Ảnh</th>
+                                <th>Họ và Tên</th>
+                                <th>Quan hệ</th>
+                                <th>Ngày sinh</th>
+                                <th>Giới tính</th>
+                                <th>CCCD</th>
+                                <th>SĐT</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+
+            members.forEach(m => {
+                const realIndex = nhanKhauData.findIndex(x => x === m);
+                const mAvt = m.avatar || `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 24 24'><path fill='%231976D2' d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z'/></svg>`;
+                html += `
+                    <tr>
+                        <td><img src="${mAvt}" class="table-avatar" onclick="openLightbox('${mAvt}')"></td>
+                        <td><b>${m.hoTen}</b></td>
+                        <td>${m.quanHe}</td>
+                        <td>${m.namSinh || ''}</td>
+                        <td>${m.gioiTinh}</td>
+                        <td>${m.canCuoc || ''}</td>
+                        <td>${m.soDT ? `<a href="tel:${m.soDT}" class="btn-call"><i class="fa-solid fa-phone"></i> ${m.soDT}</a>` : ''}</td>
+                        <td>
+                            <button class="btn btn-sm btn-primary" onclick="openFormModal(${realIndex})" title="Sửa"><i class="fa-solid fa-pen"></i></button>
+                            <button class="btn btn-sm btn-danger" onclick="deleteItem(${realIndex})" title="Xóa"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            html += `</tbody></table></div>`;
+
+            document.getElementById("detailBody").innerHTML = html;
+            document.getElementById("modalDetail").style.display = "block";
+        }
+
+        // HÀM XÓA TOÀN BỘ HỘ GIA ĐÌNH
+        function deleteHousehold(shkKey) {
+            const confirmMsg = shkKey.startsWith("KHAC_") 
+                ? "Bạn có chắc chắn muốn xóa hộ gia đình này cùng toàn bộ thành viên?" 
+                : `Bạn có chắc chắn muốn xóa toàn bộ Sổ hộ khẩu [${shkKey}] và tất cả các thành viên bên trong?`;
+
+            if (confirm(confirmMsg)) {
+                nhanKhauData = nhanKhauData.filter(item => {
+                    const itemShkKey = (item.shk && item.shk.trim() !== "") ? item.shk.trim() : "KHAC_" + (item.hoTenCH || item.hoTen);
+                    return itemShkKey !== shkKey;
+                });
+
+                saveToLocalStorage();
+                renderApp();
+                closeModal('modalDetail');
+                showToast("Đã xóa thành công hộ gia đình!");
+            }
+        }
+
+        function openFormModal(index = -1) {
+            document.getElementById("editIndex").value = index;
+            const form = document.getElementById("nhanKhauForm");
+            form.reset();
+            stopFormCamera();
+
+            const defaultImg = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24'><path fill='%23ccc' d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/></svg>";
+            document.getElementById("imgPreview").src = defaultImg;
+            document.getElementById("formBase64Image").value = "";
+
+            if (index >= 0) {
+                document.getElementById("formTitle").innerHTML = '<i class="fa-solid fa-user-pen"></i> Chỉnh Sửa Nhân Khẩu';
+                const item = nhanKhauData[index];
+                document.getElementById("formHoTen").value = item.hoTen || "";
+                document.getElementById("formSHK").value = item.shk || "";
+                document.getElementById("formNamSinh").value = item.namSinh || "";
+                document.getElementById("formGioiTinh").value = item.gioiTinh || "Nam";
+                document.getElementById("formQH").value = item.quanHe || "";
+                document.getElementById("formHoTenCH").value = item.hoTenCH || "";
+                document.getElementById("formCanCuoc").value = item.canCuoc || "";
+                document.getElementById("formSoDT").value = item.soDT || "";
+                document.getElementById("formDanToc").value = item.danToc || "";
+                document.getElementById("formTonGiao").value = item.tonGiao || "";
+                document.getElementById("formTDP").value = item.tdp || "";
+                document.getElementById("formQueQuan").value = item.queQuan || "";
+                document.getElementById("formSoNha").value = item.soNha || "";
+                document.getElementById("formThuongTru").value = item.thuongTru || "";
+                document.getElementById("formCuTru").value = item.cuTru || "";
+                document.getElementById("formTenCha").value = item.tenCha || "";
+                document.getElementById("formTenMe").value = item.tenMe || "";
+                document.getElementById("formGhiChu").value = item.ghiChu || "";
+                if (item.avatar) {
+                    document.getElementById("imgPreview").src = item.avatar;
+                    document.getElementById("formBase64Image").value = item.avatar;
+                }
+            } else {
+                document.getElementById("formTitle").innerHTML = '<i class="fa-solid fa-user-plus"></i> Thêm Nhân Khẩu Mới';
+                document.getElementById("formTDP").value = document.getElementById("filterTDP").value || "TDP 7";
+            }
+            document.getElementById("modalForm").style.display = "block";
+        }
+
+        function openFormModalForHousehold(shk) {
+            openFormModal(-1);
+            document.getElementById("formSHK").value = shk;
+            const existing = nhanKhauData.find(x => x.shk === shk);
+            if (existing) {
+                document.getElementById("formHoTenCH").value = existing.hoTenCH || "";
+                document.getElementById("formTDP").value = existing.tdp || "";
+                document.getElementById("formThuongTru").value = existing.thuongTru || "";
+                document.getElementById("formSoNha").value = existing.soNha || "";
+            }
+        }
+
+        function saveFormData() {
+            const index = parseInt(document.getElementById("editIndex").value);
+            const newItem = {
+                stt: index >= 0 ? nhanKhauData[index].stt : nhanKhauData.length + 1,
+                hoTen: document.getElementById("formHoTen").value.trim(),
+                shk: document.getElementById("formSHK").value.trim(),
+                namSinh: document.getElementById("formNamSinh").value.trim(),
+                gioiTinh: document.getElementById("formGioiTinh").value,
+                quanHe: document.getElementById("formQH").value.trim(),
+                hoTenCH: document.getElementById("formHoTenCH").value.trim(),
+                canCuoc: document.getElementById("formCanCuoc").value.trim(),
+                soDT: document.getElementById("formSoDT").value.trim(),
+                danToc: document.getElementById("formDanToc").value.trim() || "Kinh",
+                tonGiao: document.getElementById("formTonGiao").value.trim() || "Không",
+                tdp: document.getElementById("formTDP").value.trim(),
+                queQuan: document.getElementById("formQueQuan").value.trim(),
+                soNha: document.getElementById("formSoNha").value.trim(),
+                thuongTru: document.getElementById("formThuongTru").value.trim(),
+                cuTru: document.getElementById("formCuTru").value.trim(),
+                tenCha: document.getElementById("formTenCha").value.trim(),
+                tenMe: document.getElementById("formTenMe").value.trim(),
+                ghiChu: document.getElementById("formGhiChu").value.trim(),
+                avatar: document.getElementById("formBase64Image").value
+            };
+
+            if (index >= 0) {
+                nhanKhauData[index] = newItem;
+                showToast("Cập nhật thành công!");
+            } else {
+                nhanKhauData.push(newItem);
+                showToast("Thêm mới thành công!");
+            }
+
+            saveToLocalStorage();
+            closeModal('modalForm');
+            renderApp();
+            
+            const detailModal = document.getElementById("modalDetail");
+            if (detailModal.style.display === "block" && newItem.shk) {
+                const updatedShkKey = newItem.shk ? newItem.shk.trim() : "KHAC_" + newItem.hoTenCH;
+                openHouseholdDetail(updatedShkKey);
+            }
+        }
+
+        function deleteItem(index) {
+            if (confirm(`Bạn có chắc chắn muốn xóa nhân khẩu: ${nhanKhauData[index].hoTen}?`)) {
+                const item = nhanKhauData[index];
+                const shkKey = (item.shk && item.shk.trim() !== "") ? item.shk.trim() : "KHAC_" + (item.hoTenCH || item.hoTen);
+                
+                nhanKhauData.splice(index, 1);
+                saveToLocalStorage();
+                renderApp();
+                showToast("Đã xóa thành công!");
+
+                const detailModal = document.getElementById("modalDetail");
+                if (detailModal.style.display === "block") {
+                    const remainingMembers = nhanKhauData.filter(x => {
+                        const xKey = (x.shk && x.shk.trim() !== "") ? x.shk.trim() : "KHAC_" + (x.hoTenCH || x.hoTen);
+                        return xKey === shkKey;
+                    });
+                    if (remainingMembers.length > 0) {
+                        openHouseholdDetail(shkKey);
+                    } else {
+                        closeModal('modalDetail');
+                    }
+                }
+            }
+        }
+
+        // FORM THỐNG KÊ CHI TIẾT
+        function openStatModal() {
+            const householdsMap = {};
+            nhanKhauData.forEach(i => {
+                const shkKey = (i.shk && i.shk.trim() !== "") ? i.shk.trim() : "KHAC_" + i.hoTen;
+                householdsMap[shkKey] = true;
+            });
+
+            const totalHo = Object.keys(householdsMap).length;
+            const totalNhanKhau = nhanKhauData.length;
+            const namCount = nhanKhauData.filter(i => i.gioiTinh === "Nam").length;
+            const nuCount = nhanKhauData.filter(i => i.gioiTinh === "Nữ").length;
+
+            const tdpMap = {};
+            const danTocMap = {};
+            const tonGiaoMap = {};
+
+            let countTuoi14TroLen = 0;
+            let count17to18_Nam = 0, count17to18_Nu = 0;
+            let countNVQS18to25_Nam = 0, countNVQS18to25_Nu = 0;
+            let count25to27_Nam = 0, count25to27_Nu = 0;
+
+            nhanKhauData.forEach(i => {
+                const t = i.tdp || "Chưa rõ TDP";
+                const shkKey = (i.shk && i.shk.trim() !== "") ? i.shk.trim() : "KHAC_" + i.hoTen;
+                if (!tdpMap[t]) tdpMap[t] = { totalNhanKhau: 0, hoSet: new Set(), nam: 0, nu: 0 };
+                tdpMap[t].totalNhanKhau++;
+                tdpMap[t].hoSet.add(shkKey);
+                if (i.gioiTinh === "Nam") tdpMap[t].nam++;
+                if (i.gioiTinh === "Nữ") tdpMap[t].nu++;
+
+                const dt = (i.danToc && i.danToc.trim() !== "") ? i.danToc.trim() : "Chưa xác định";
+                danTocMap[dt] = (danTocMap[dt] || 0) + 1;
+
+                const tg = (i.tonGiao && i.tonGiao.trim() !== "") ? i.tonGiao.trim() : "Không";
+                tonGiaoMap[tg] = (tonGiaoMap[tg] || 0) + 1;
+
+                const age = calculateAge(i.namSinh);
+                const g = i.gioiTinh ? i.gioiTinh.trim() : "";
+
+                if (age !== null) {
+                    if (age >= 14) countTuoi14TroLen++;
+                    if (age >= 17 && age < 18) {
+                        if (g === "Nam") count17to18_Nam++;
+                        else if (g === "Nữ") count17to18_Nu++;
+                    }
+                    if (age >= 18 && age < 25) {
+                        if (g === "Nam") countNVQS18to25_Nam++;
+                        else if (g === "Nữ") countNVQS18to25_Nu++;
+                    }
+                    if (age >= 25 && age < 27) {
+                        if (g === "Nam") count25to27_Nam++;
+                        else if (g === "Nữ") count25to27_Nu++;
+                    }
+                }
+            });
+
+            let html = `
+                <div style="margin-bottom: 20px; background: #f8f9fa; padding: 12px; border-radius: 8px;">
+                    <p style="margin-bottom: 5px;"><b>Tổng số hộ gia đình:</b> ${totalHo} | <b>Tổng nhân khẩu:</b> ${totalNhanKhau} | <b>Nam:</b> ${namCount} | <b>Nữ:</b> ${nuCount}</p>
+                </div>
+
+                <h3 style="margin-bottom: 8px; font-size: 1.1rem; color: var(--primary-color);"><i class="fa-solid fa-building-flag"></i> 1. Thống kê theo Tổ Dân Phố</h3>
+                <div class="table-responsive" style="margin-bottom: 20px;">
+                    <table class="custom-table">
+                        <thead>
+                            <tr>
+                                <th>Tổ Dân Phố</th>
+                                <th>Số Hộ Gia Đình</th>
+                                <th>Tổng Nhân Khẩu</th>
+                                <th>Nam</th>
+                                <th>Nữ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            for (let tdp in tdpMap) {
+                html += `
+                    <tr>
+                        <td><b>${tdp}</b></td>
+                        <td>${tdpMap[tdp].hoSet.size}</td>
+                        <td>${tdpMap[tdp].totalNhanKhau}</td>
+                        <td>${tdpMap[tdp].nam}</td>
+                        <td>${tdpMap[tdp].nu}</td>
+                    </tr>
+                `;
+            }
+            html += `</tbody></table></div>`;
+
+            html += `
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; margin-bottom: 20px;">
+                    <div>
+                        <h3 style="margin-bottom: 8px; font-size: 1.1rem; color: var(--primary-color);"><i class="fa-solid fa-people-group"></i> 2. Thống kê theo Dân Tộc</h3>
+                        <div class="table-responsive">
+                            <table class="custom-table">
+                                <thead><tr><th>Dân tộc</th><th>Số lượng</th></tr></thead>
+                                <tbody>
+            `;
+            for (let dt in danTocMap) {
+                html += `<tr><td>${dt}</td><td><b>${danTocMap[dt]}</b></td></tr>`;
+            }
+            html += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    <div>
+                        <h3 style="margin-bottom: 8px; font-size: 1.1rem; color: var(--primary-color);"><i class="fa-solid fa-place-of-worship"></i> 3. Thống kê theo Tôn Giáo</h3>
+                        <div class="table-responsive">
+                            <table class="custom-table">
+                                <thead><tr><th>Tôn giáo</th><th>Số lượng</th></tr></thead>
+                                <tbody>
+            `;
+            for (let tg in tonGiaoMap) {
+                html += `<tr><td>${tg}</td><td><b>${tonGiaoMap[tg]}</b></td></tr>`;
+            }
+            html += `
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            html += `
+                <h3 style="margin-bottom: 8px; font-size: 1.1rem; color: var(--primary-color);"><i class="fa-solid fa-calendar-days"></i> 4. Thống kê độ tuổi chuyên đề</h3>
+                <div class="table-responsive">
+                    <table class="custom-table">
+                        <thead>
+                            <tr>
+                                <th>Nhóm độ tuổi / Phân loại</th>
+                                <th>Tổng số</th>
+                                <th>Nam</th>
+                                <th>Nữ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><b>Độ tuổi từ 14 trở lên</b> (Căn cước / Định danh)</td>
+                                <td><b>${countTuoi14TroLen}</b></td>
+                                <td colspan="2">Tổng hợp chung</td>
+                            </tr>
+                            <tr>
+                                <td><b>Độ tuổi từ đủ 17 đến dưới 18 tuổi</b></td>
+                                <td><b>${count17to18_Nam + count17to18_Nu}</b></td>
+                                <td>${count17to18_Nam}</td>
+                                <td>${count17to18_Nu}</td>
+                            </tr>
+                            <tr>
+                                <td><b>Độ tuổi nghĩa vụ quân sự từ đủ 18 đến dưới 25 tuổi</b></td>
+                                <td><b>${countNVQS18to25_Nam + countNVQS18to25_Nu}</b></td>
+                                <td>${countNVQS18to25_Nam}</td>
+                                <td>${countNVQS18to25_Nu}</td>
+                            </tr>
+                            <tr>
+                                <td><b>Độ tuổi từ 25 đến dưới 27 tuổi</b></td>
+                                <td><b>${count25to27_Nam + count25to27_Nu}</b></td>
+                                <td>${count25to27_Nam}</td>
+                                <td>${count25to27_Nu}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            `;
+
+            document.getElementById("statModalBody").innerHTML = html;
+            document.getElementById("modalStat").style.display = "block";
+        }
+
+        // XUẤT & NHẬP EXCEL
+        function exportExcel() {
+            const exportData = nhanKhauData.map((item, index) => ({
+                "STT": item.stt || (index + 1),
+                "Họ và Tên": item.hoTen,
+                "Số Hộ Khẩu": item.shk,
+                "Ngày Sinh": item.namSinh,
+                "Giới Tính": item.gioiTinh,
+                "Quan Hệ Với Chủ Hộ": item.quanHe,
+                "Họ Tên Chủ Hộ": item.hoTenCH,
+                "Số Căn Cước": item.canCuoc,
+                "Số Điện Thoại": item.soDT,
+                "Dân Tộc": item.danToc,
+                "Tôn Giáo": item.tonGiao,
+                "Tổ Dân Phố": item.tdp,
+                "Quê Quán": item.queQuan,
+                "Số Nhà": item.soNha,
+                "Nơi Thường Trú": item.thuongTru,
+                "Nơi Cư Trú": item.cuTru,
+                "Tên Cha": item.tenCha,
+                "Tên Mẹ": item.tenMe,
+                "Ghi Chú": item.ghiChu
+            }));
+
+            const ws = XLSX.utils.json_to_sheet(exportData);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, "DanhSachCuTru");
+            XLSX.writeFile(wb, "QuanLyCuTru_TDP7ThanhCong.xlsx");
+            showToast("Xuất Excel thành công!");
+        }
+
+        function importExcel(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const data = new Uint8Array(event.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    const firstSheet = workbook.SheetNames[0];
+                    const rows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet]);
+
+                    nhanKhauData = rows.map((r, i) => ({
+                        stt: r["STT"] || (i + 1),
+                        hoTen: r["Họ và Tên"] || r["Ho va Ten"] || "",
+                        shk: String(r["Số Hộ Khẩu"] || r["So Ho Khau"] || ""),
+                        namSinh: String(r["Ngày Sinh"] || r["Ngay Sinh"] || ""),
+                        gioiTinh: r["Giới Tính"] || r["Gioi Tinh"] || "Nam",
+                        quanHe: r["Quan Hệ Với Chủ Hộ"] || r["Quan He"] || "Thành viên",
+                        hoTenCH: r["Họ Tên Chủ Hộ"] || r["Chu Ho"] || "",
+                        canCuoc: String(r["Số Căn Cước"] || r["CCCD"] || ""),
+                        soDT: String(r["Số Điện Thoại"] || r["SĐT"] || ""),
+                        danToc: r["Dân Tộc"] || "Kinh",
+                        tonGiao: r["Tôn Giáo"] || "Không",
+                        tdp: r["Tổ Dân Phố"] || r["TDP"] || "TDP 7",
+                        queQuan: r["Quê Quán"] || "",
+                        soNha: String(r["Số Nhà"] || ""),
+                        thuongTru: r["Nơi Thường Trú"] || "",
+                        cuTru: r["Nơi Cư Trú"] || "",
+                        tenCha: r["Tên Cha"] || "",
+                        tenMe: r["Tên Mẹ"] || "",
+                        ghiChu: r["Ghi Chú"] || "",
+                        avatar: ""
+                    }));
+
+                    saveToLocalStorage();
+                    renderApp();
+                    showToast("Nhập file Excel thành công!");
+                } catch (err) {
+                    alert("Lỗi đọc file Excel: " + err.message);
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function openLightbox(src) {
+            document.getElementById("lightboxImg").src = src;
+            document.getElementById("lightboxModal").style.display = "block";
+        }
+
+        function closeLightbox() {
+            document.getElementById("lightboxModal").style.display = "none";
+        }
+
+        function closeModal(modalId) {
+            document.getElementById(modalId).style.display = "none";
+            if (modalId === 'modalForm') stopFormCamera();
+        }
+
+        function showToast(msg) {
+            const toast = document.getElementById("toast");
+            document.getElementById("toastMsg").innerText = msg;
+            toast.style.display = "flex";
+            setTimeout(() => { toast.style.display = "none"; }, 3000);
+        }
+
+        window.onclick = function(event) {
+            if (event.target.classList.contains('modal')) {
+                event.target.style.display = "none";
+                stopFormCamera();
+            }
+        }
+    </script>
+</body>
+</html>
+```[cite: 6]
