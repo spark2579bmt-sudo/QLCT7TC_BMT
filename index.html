@@ -3,1505 +3,1165 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Quản lý cư trú Tổ dân phố 7 Thành Công - Công an phường Buôn Ma Thuột</title>
-
-    <!-- PWA Meta Tags -->
-    <meta name="theme-color" content="#1976D2">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-
-    <!-- Google Fonts & FontAwesome -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <title>Phần Mềm Quản Lý Nhân Hộ Khẩu</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome CDN -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-
-    <!-- SheetJS đọc/ghi file Excel -->
+    <!-- SheetJS (XLSX) CDN để đọc/ghi file Excel -->
     <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-    
-    <!-- Face-API.js cho tính năng nhận diện khuôn mặt -->
-    <script defer src="https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/dist/face-api.js"></script>
-
-    <style>
-        :root {
-            --primary-color: #1976D2;
-            --primary-dark: #1565C0;
-            --accent-color: #28a745;
-            --bg-color: #f4f6f9;
-            --card-bg: #ffffff;
-            --text-color: #2c3e50;
-            --text-muted: #6c757d;
-            --border-color: #e0e0e0;
-            --shadow-sm: 0 2px 4px rgba(0,0,0,0.08);
-            --shadow-md: 0 4px 12px rgba(0,0,0,0.12);
-            --radius: 12px;
-            --transition: all 0.25s ease;
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Roboto', sans-serif; -webkit-tap-highlight-color: transparent; }
-        body { background-color: var(--bg-color); color: var(--text-color); padding-bottom: 40px; }
-
-        /* MÀN HÌNH KHÓA BẢO MẬT */
-        .auth-overlay {
-            position: fixed;
-            top: 0; left: 0; width: 100vw; height: 100vh;
-            background: linear-gradient(135deg, #1565C0, #0d47a1);
-            z-index: 9999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        .auth-card {
-            background: white;
-            padding: 30px 25px;
-            border-radius: var(--radius);
-            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-            width: 100%;
-            max-width: 420px;
-            text-align: center;
-        }
-        .auth-card i.lock-icon { font-size: 3rem; color: var(--primary-color); margin-bottom: 15px; }
-        .auth-card h2 { font-size: 1.3rem; margin-bottom: 10px; color: var(--text-color); }
-        .auth-card p { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 20px; line-height: 1.4; }
-        .auth-card input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid var(--border-color); border-radius: 6px; outline: none; font-size: 1rem; }
-        .auth-card .btn-lock { width: 100%; padding: 12px; background: var(--primary-color); color: white; border: none; border-radius: 6px; font-size: 1rem; font-weight: 500; cursor: pointer; margin-bottom: 8px; display: inline-flex; align-items: center; justify-content: center; gap: 8px;}
-        .auth-card .btn-lock:hover { background: var(--primary-dark); }
-        .auth-card .btn-face-unlock { background: #6c757d; }
-        .auth-card .btn-face-unlock:hover { background: #5a6268; }
-        .auth-error { color: #d32f2f; font-size: 0.85rem; margin-top: 10px; display: none; }
-
-        /* KHUNG CAMERA NHẬN DIỆN KHUÔN MẶT */
-        #faceUnlockContainer { display: none; margin-top: 15px; text-align: center; }
-        #faceVideo { width: 100%; max-height: 240px; background: #000; border-radius: 8px; object-fit: cover; }
-
-        /* HEADER */
-        .app-header { background: linear-gradient(135deg, var(--primary-color), var(--primary-dark)); color: white; padding: 12px 20px; position: sticky; top: 0; z-index: 100; box-shadow: var(--shadow-md); }
-        .header-content { max-width: 1300px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-        .header-title-box { display: flex; flex-direction: column; }
-        .header-title-box h1 { font-size: 1.2rem; font-weight: 700; line-height: 1.2; text-transform: uppercase; letter-spacing: 0.5px; }
-        .header-title-box p { font-size: 0.85rem; opacity: 0.9; font-weight: 400; }
-        .header-actions { display: flex; gap: 8px; flex-wrap: wrap; }
-
-        /* BUTTONS */
-        .btn { padding: 8px 16px; border: none; border-radius: 6px; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; transition: var(--transition); font-size: 0.9rem; text-decoration: none; }
-        .btn:active { transform: scale(0.97); }
-        .btn-header { background: rgba(255, 255, 255, 0.2); color: white; }
-        .btn-header:hover { background: rgba(255, 255, 255, 0.3); }
-        .btn-accent { background: var(--accent-color); color: white; }
-        .btn-accent:hover { background: #218838; }
-        .btn-primary { background: var(--primary-color); color: white; }
-        .btn-secondary { background: #6c757d; color: white; }
-        .btn-danger { background: #dc3545; color: white; }
-        .btn-danger:hover { background: #bd2130; }
-        .btn-warning { background: #ff9800; color: white; }
-        .btn-warning:hover { background: #e68a00; }
-        .btn-outline { border: 1px solid var(--primary-color); color: var(--primary-color); background: transparent; }
-        .btn-sm { padding: 4px 8px; font-size: 0.8rem; }
-        
-        .btn-call { background: #28a745; color: white !important; text-decoration: none; padding: 4px 10px; border-radius: 4px; font-size: 0.85rem; display: inline-flex; align-items: center; gap: 5px; font-weight: 500; }
-        .btn-call:hover { background: #218838; }
-
-        /* CONTAINER */
-        .app-container { max-width: 1300px; margin: 20px auto; padding: 0 15px; }
-        .card { background: var(--card-bg); border-radius: var(--radius); padding: 18px; box-shadow: var(--shadow-sm); margin-bottom: 20px; }
-
-        /* STAT CARDS */
-        .stat-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 20px; }
-        .stat-card { background: white; padding: 14px; border-radius: var(--radius); display: flex; align-items: center; gap: 12px; box-shadow: var(--shadow-sm); }
-        .stat-icon { width: 46px; height: 46px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: white; font-size: 1.3rem; flex-shrink: 0; }
-        .bg-blue { background: #1976D2; } 
-        .bg-green { background: #2e7d32; } 
-        .bg-cyan { background: #0288d1; } 
-        .bg-pink { background: #e91e63; } 
-        .bg-orange { background: #ef6c00; } 
-        .bg-purple { background: #8e24aa; }
-        .stat-info { display: flex; flex-direction: column; }
-        .stat-value { font-size: 1.4rem; font-weight: 700; line-height: 1.2; }
-        .stat-label { font-size: 0.8rem; color: var(--text-muted); }
-
-        /* SEARCH & FILTER */
-        .search-box { position: relative; margin-bottom: 12px; }
-        .search-icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
-        .search-box input { width: 100%; padding: 12px 35px 12px 38px; border: 1px solid var(--border-color); border-radius: 8px; font-size: 1rem; outline: none; transition: var(--transition); }
-        .search-box input:focus { border-color: var(--primary-color); box-shadow: 0 0 0 3px rgba(25, 118, 210, 0.15); }
-        
-        .advanced-search-panel { background: #f8f9fa; border: 1px solid var(--border-color); border-radius: 8px; padding: 12px; margin-bottom: 15px; display: none; }
-        .advanced-search-panel.show { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; }
-
-        .filter-controls { display: flex; flex-wrap: wrap; gap: 15px; align-items: center; justify-content: space-between; }
-        .filter-left { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; flex: 1; }
-        .filter-group { display: flex; align-items: center; gap: 6px; min-width: 180px; }
-        .filter-group select { width: 100%; padding: 8px 10px; border-radius: 6px; border: 1px solid var(--border-color); outline: none; }
-
-        /* HỘ GIA ĐÌNH CARD LIST */
-        .grid-cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); gap: 15px; }
-        .ho-gia-dinh-card { background: white; border-radius: var(--radius); padding: 15px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; justify-content: space-between; transition: var(--transition); border-left: 5px solid var(--primary-color); }
-        .ho-gia-dinh-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md); }
-        
-        .ho-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 10px; }
-        .ho-title h3 { font-size: 1.1rem; color: var(--primary-color); margin-bottom: 2px; }
-        .ho-title p { font-size: 0.85rem; color: var(--text-muted); }
-        .badge-soluong { background: #e3f2fd; color: var(--primary-color); padding: 4px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: 700; white-space: nowrap; }
-
-        .ho-body { font-size: 0.9rem; margin-bottom: 12px; }
-        .ho-body p { margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
-        .member-preview-list { background: #f8f9fa; padding: 8px; border-radius: 6px; margin-top: 8px; font-size: 0.85rem; color: var(--text-muted); }
-        
-        .card-actions { display: flex; gap: 8px; justify-content: flex-end; border-top: 1px solid var(--border-color); padding-top: 10px; flex-wrap: wrap; }
-
-        /* PHÂN TRANG */
-        .pagination-container { display: flex; justify-content: center; gap: 5px; margin-top: 20px; }
-        .page-btn { padding: 6px 12px; border: 1px solid var(--border-color); background: white; border-radius: 4px; cursor: pointer; }
-        .page-btn.active { background: var(--primary-color); color: white; border-color: var(--primary-color); }
-
-        /* MODAL */
-        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); overflow-y: auto; }
-        .modal-content { background: white; margin: 3% auto; border-radius: var(--radius); box-shadow: var(--shadow-md); animation: fadeIn 0.3s; overflow: hidden; }
-        .modal-md { width: 90%; max-width: 750px; }
-        .modal-lg { width: 95%; max-width: 1050px; }
-        .modal-header { background: var(--primary-color); color: white; padding: 15px 20px; display: flex; justify-content: space-between; align-items: center; }
-        .close-modal { font-size: 1.5rem; cursor: pointer; color: white; }
-        .modal-body { padding: 20px; max-height: 80vh; overflow-y: auto; }
-
-        /* DETAILS */
-        .detail-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 10px; }
-        .member-detail-item { background: #f8f9fa; padding: 10px; border-radius: 6px; border: 1px solid var(--border-color); }
-        .member-detail-item label { font-size: 0.8rem; color: var(--text-muted); display: block; margin-bottom: 2px; }
-        .member-detail-item span { font-weight: 500; font-size: 0.95rem; }
-
-        .table-responsive { overflow-x: auto; margin-top: 15px; }
-        .custom-table { width: 100%; border-collapse: collapse; min-width: 600px; }
-        .custom-table th, .custom-table td { border: 1px solid var(--border-color); padding: 8px 12px; font-size: 0.85rem; text-align: left; vertical-align: middle; }
-        .custom-table th { background: #f1f3f5; }
-        .table-avatar { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid #ccc; cursor: pointer; }
-
-        /* FORM */
-        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
-        .full-width { grid-column: 1 / -1; }
-        .form-group { display: flex; flex-direction: column; gap: 4px; }
-        .form-group label { font-size: 0.85rem; font-weight: 500; }
-        .form-group input, .form-group select, .form-group textarea { padding: 8px; border: 1px solid var(--border-color); border-radius: 6px; outline: none; }
-        .required { color: red; }
-        
-        .avatar-upload-section { display: flex; flex-direction: column; align-items: center; gap: 10px; margin-bottom: 15px; background: #fafafa; padding: 15px; border-radius: 8px; border: 1px dashed var(--border-color); }
-        .avatar-preview img { width: 90px; height: 90px; border-radius: 50%; object-fit: cover; border: 2px solid var(--primary-color); cursor: pointer; }
-        .form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; }
-
-        /* LIGHTBOX */
-        .lightbox-modal { display: none; position: fixed; z-index: 3000; padding-top: 60px; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.9); text-align: center; }
-        .lightbox-content { max-width: 90%; max-height: 80vh; border-radius: 8px; border: 2px solid white; }
-        .lightbox-close { position: absolute; top: 20px; right: 30px; color: #f1f1f1; font-size: 40px; font-weight: bold; cursor: pointer; }
-
-        /* TOAST */
-        .toast { position: fixed; bottom: 20px; right: 20px; background: #323232; color: white; padding: 12px 20px; border-radius: 6px; display: none; align-items: center; gap: 15px; z-index: 2000; box-shadow: var(--shadow-md); }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-    </style>
 </head>
-<body>
+<body class="bg-slate-100 font-sans text-slate-800">
 
-    <!-- MÀN HÌNH MẬT KHẨU & KHUÔN MẶT BẢO MẬT -->
-    <div id="authOverlay" class="auth-overlay">
-        <div class="auth-card">
-            <i class="fa-solid fa-shield-halved lock-icon"></i>
-            <h2 id="authTitle">Bảo Mật Ứng Dụng</h2>
-            <p id="authDesc">Nhập mật khẩu hoặc quét khuôn mặt để tiếp tục.</p>
-            <input type="password" id="authPasswordInput" placeholder="Nhập mật khẩu..." autocomplete="off">
-            <input type="password" id="authConfirmPasswordInput" placeholder="Xác nhận mật khẩu..." autocomplete="off" style="display:none;">
-            
-            <button class="btn-lock" id="btnAuthSubmit"><i class="fa-solid fa-key"></i> Xác nhận mật khẩu</button>
-            <button class="btn-lock btn-face-unlock" id="btnFaceUnlockToggle"><i class="fa-solid fa-face-smile"></i> Mở khóa bằng khuôn mặt</button>
-
-            <!-- Khung camera nhận diện khuôn mặt -->
-            <div id="faceUnlockContainer">
-                <video id="faceVideo" autoplay playsinline muted></video>
-                <div style="margin-top: 8px; display: flex; justify-content: center; gap: 6px;">
-                    <button type="button" class="btn btn-sm btn-outline" id="btnSwitchAuthCamera"><i class="fa-solid fa-camera-rotate"></i> Đổi Camera</button>
-                </div>
-                <p id="faceStatusMsg" style="font-size: 0.8rem; margin-top: 8px; color: #1565C0; font-weight: 500;">Đang tải mô hình nhận diện...</p>
+<!-- LOGIN MODAL -->
+<div id="loginModal" class="fixed inset-0 bg-slate-900/70 z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border-t-4 border-blue-900">
+        <div class="text-center mb-6">
+            <div class="w-16 h-16 bg-blue-900 text-white rounded-full flex items-center justify-center text-2xl mx-auto mb-3 shadow-md">
+                <i class="fa-solid fa-shield-halved"></i>
             </div>
+            <h2 class="text-xl font-bold text-blue-900 uppercase">Đăng Nhập Hệ Thống</h2>
+            <p class="text-xs text-slate-500 mt-1">Quản lý Nhân Hộ Khẩu - Phường Buôn Ma Thuột</p>
+        </div>
+        <form id="loginForm" onsubmit="handleLogin(event)" class="space-y-4">
+            <div>
+                <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Mật khẩu truy cập</label>
+                <div class="relative">
+                    <span class="absolute inset-y-0 left-0 flex items-center pl-3 text-slate-400">
+                        <i class="fa-solid fa-lock"></i>
+                    </span>
+                    <input type="password" id="loginPassword" required placeholder="Mật khẩu mặc định: Dancu@123" class="w-full pl-10 pr-4 py-2.5 text-sm border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:outline-none">
+                </div>
+            </div>
+            <div id="loginError" class="text-red-600 text-xs hidden font-medium text-center"></div>
+            <button type="submit" class="w-full bg-blue-900 hover:bg-blue-800 text-white font-semibold py-2.5 rounded-lg text-sm shadow transition duration-200">
+                <i class="fa-solid fa-right-to-bracket mr-2"></i> Truy Cập Hệ Thống
+            </button>
+        </form>
+    </div>
+</div>
 
-            <div id="authError" class="auth-error">Mật khẩu không hợp lệ!</div>
+<!-- CHANGE PASSWORD MODAL -->
+<div id="changePasswordModal" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border-t-4 border-amber-600">
+        <div class="flex justify-between items-center mb-4 border-b pb-3">
+            <h3 class="text-lg font-bold text-slate-800 flex items-center">
+                <i class="fa-solid fa-key text-amber-600 mr-2"></i> Đổi Mật Khẩu
+            </h3>
+            <button onclick="closeModal('changePasswordModal')" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+        </div>
+        <form id="changePasswordForm" onsubmit="handleChangePassword(event)" class="space-y-4">
+            <div>
+                <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Mật khẩu hiện tại</label>
+                <input type="password" id="currentPassword" required class="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-amber-600 focus:outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Mật khẩu mới (Tối thiểu 8 ký tự, có ký tự đặc biệt)</label>
+                <input type="password" id="newPassword" required class="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-amber-600 focus:outline-none">
+            </div>
+            <div>
+                <label class="block text-xs font-semibold uppercase text-slate-600 mb-1">Nhập lại mật khẩu mới</label>
+                <input type="password" id="confirmPassword" required class="w-full px-3 py-2 text-sm border rounded-lg focus:ring-2 focus:ring-amber-600 focus:outline-none">
+            </div>
+            <div id="changePassError" class="text-red-600 text-xs hidden font-medium"></div>
+            <div class="flex justify-end space-x-2 pt-2">
+                <button type="button" onclick="closeModal('changePasswordModal')" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-sm font-semibold rounded-lg">Hủy</button>
+                <button type="submit" class="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white text-sm font-semibold rounded-lg shadow">Xác Nhận Đổi</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- STATISTICS MODAL -->
+<div id="statsModal" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full p-6 max-h-[90vh] overflow-y-auto border-t-4 border-indigo-600">
+        <div class="flex justify-between items-center mb-4 border-b pb-3">
+            <h3 class="text-lg font-bold text-slate-800 flex items-center">
+                <i class="fa-solid fa-chart-pie text-indigo-600 mr-2"></i> Bảng Thống Kê Tổng Hợp Dân Cư (Đã loại trừ chuyển đi)
+            </h3>
+            <button onclick="closeModal('statsModal')" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+        </div>
+        <div id="statsContent" class="space-y-6"></div>
+        <div class="mt-6 flex justify-end">
+            <button onclick="closeModal('statsModal')" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold rounded-lg shadow">Đóng</button>
         </div>
     </div>
+</div>
 
-    <!-- APP HEADER -->
-    <header class="app-header">
-        <div class="header-content">
-            <div class="header-title-box">
-                <h1>Quản lý cư trú Tổ dân phố 7 Thành Công</h1>
-                <p>Công an phường Buôn Ma Thuột</p>
+<!-- CAMERA CAPTURE MODAL -->
+<div id="cameraModal" class="fixed inset-0 bg-slate-900/80 z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-5 text-center border-t-4 border-blue-900">
+        <div class="flex justify-between items-center mb-3 border-b pb-2">
+            <h3 class="text-base font-bold text-slate-800 flex items-center">
+                <i class="fa-solid fa-camera text-blue-900 mr-2"></i> Chụp Ảnh Trực Tiếp Từ Camera
+            </h3>
+            <button onclick="closeCameraModal()" class="text-slate-400 hover:text-slate-600 text-xl font-bold">&times;</button>
+        </div>
+        <div class="w-full h-72 bg-slate-900 rounded-lg flex items-center justify-center overflow-hidden relative border mb-3">
+            <video id="liveCameraStream" autoplay playsinline class="w-full h-full object-cover"></video>
+            <canvas id="liveCameraCanvas" class="hidden"></canvas>
+        </div>
+        <div class="flex justify-center space-x-3">
+            <button type="button" onclick="takeLiveSnapshot()" class="px-5 py-2.5 bg-blue-900 hover:bg-blue-800 text-white font-semibold rounded-lg shadow text-xs flex items-center">
+                <i class="fa-solid fa-camera-retro mr-2"></i> Chụp Ảnh
+            </button>
+            <button type="button" onclick="closeCameraModal()" class="px-4 py-2.5 bg-slate-300 hover:bg-slate-400 text-slate-700 font-semibold rounded-lg text-xs">Hủy</button>
+        </div>
+    </div>
+</div>
+
+<!-- HOUSE DETAIL MODAL -->
+<div id="houseDetailModal" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-2 sm:p-4 hidden">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-6xl w-full p-4 sm:p-6 max-h-[95vh] overflow-y-auto border-t-4 border-blue-900 flex flex-col">
+        <div class="flex justify-between items-center mb-4 border-b pb-3">
+            <h3 class="text-lg font-bold text-blue-900 flex items-center">
+                <i class="fa-solid fa-house-user mr-2"></i> Chi Tiết Hộ Khẩu & Nhân Khẩu
+            </h3>
+            <button onclick="closeModal('houseDetailModal')" class="text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
+        </div>
+        
+        <div id="houseSummaryInfo" class="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 text-sm"></div>
+
+        <div class="flex justify-between items-center mb-3">
+            <h4 class="font-bold text-slate-700 uppercase text-xs tracking-wider">Danh Sách Thành Viên Trong Hộ</h4>
+            <button onclick="openAddMemberModal()" class="px-3 py-1.5 bg-blue-900 hover:bg-blue-800 text-white text-xs font-semibold rounded-lg shadow flex items-center">
+                <i class="fa-solid fa-user-plus mr-1.5"></i> Thêm Nhân Khẩu
+            </button>
+        </div>
+
+        <div class="overflow-x-auto border rounded-xl flex-grow shadow-inner">
+            <table id="memberTable" class="w-full text-left border-collapse text-xs">
+                <thead class="bg-slate-100 text-slate-700 uppercase tracking-wider font-semibold border-b"></thead>
+                <tbody class="divide-y divide-slate-200 bg-white"></tbody>
+            </table>
+        </div>
+
+        <div class="mt-4 flex justify-end">
+            <button onclick="closeModal('houseDetailModal')" class="px-5 py-2 bg-slate-700 hover:bg-slate-800 text-white text-sm font-semibold rounded-lg shadow">Đóng</button>
+        </div>
+    </div>
+</div>
+
+<!-- ADD/EDIT HOUSE MODAL -->
+<div id="houseFormModal" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full p-6 max-h-[90vh] overflow-y-auto border-t-4 border-blue-900">
+        <div class="flex justify-between items-center mb-4 border-b pb-3">
+            <h3 id="houseFormTitle" class="text-lg font-bold text-blue-900 flex items-center">Thêm Mới Hộ Khẩu</h3>
+            <button onclick="closeModal('houseFormModal')" class="text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
+        </div>
+        <form id="houseForm" onsubmit="handleSaveHouse(event)" class="space-y-4">
+            <div class="bg-slate-50 border p-4 rounded-xl flex flex-col sm:flex-row items-center gap-4">
+                <div class="w-24 h-24 bg-slate-200 border-2 border-dashed border-slate-400 rounded-lg overflow-hidden flex items-center justify-center relative flex-shrink-0">
+                    <img id="housePhotoPreview" src="" class="w-full h-full object-cover hidden" alt="Ảnh chủ hộ">
+                    <i id="housePhotoIcon" class="fa-solid fa-image text-slate-400 text-2xl"></i>
+                </div>
+                <div class="flex-grow space-y-2 text-xs w-full">
+                    <label class="block font-semibold uppercase text-slate-700">Ảnh chân dung chủ hộ</label>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" onclick="openCameraModal('house')" class="bg-blue-900 hover:bg-blue-800 text-white px-3 py-2 rounded-lg font-semibold shadow flex items-center">
+                            <i class="fa-solid fa-camera mr-1.5"></i> Chụp trực tiếp
+                        </button>
+                        <label class="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-2 rounded-lg cursor-pointer shadow font-semibold flex items-center">
+                            <i class="fa-solid fa-image mr-1.5"></i> Chọn từ thư viện
+                            <input type="file" accept="image/*" onchange="handlePhotoFile(event, 'housePhoto')" class="hidden">
+                        </label>
+                        <button type="button" onclick="removePhoto('housePhoto')" class="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-2 rounded-lg font-semibold">Xóa ảnh</button>
+                    </div>
+                </div>
             </div>
-            <div class="header-actions">
-                <button class="btn btn-header btn-warning" id="btnOpenStatModal" title="Xem báo cáo thống kê chi tiết">
-                    <i class="fa-solid fa-chart-pie"></i> <span>Thống Kê</span>
-                </button>
-                <button class="btn btn-header" id="btnSetupFace" title="Đăng ký khuôn mặt mở khóa">
-                    <i class="fa-solid fa-id-card-clip"></i> <span>ĐK Khuôn Mặt</span>
-                </button>
-                <button class="btn btn-header" id="btnChangePass" title="Đổi mật khẩu">
-                    <i class="fa-solid fa-key"></i> <span>Đổi MK</span>
-                </button>
-                <label for="excelFileInput" class="btn btn-header" title="Nhập Excel" style="cursor: pointer;">
-                    <i class="fa-solid fa-file-import"></i> <span>Nhập Excel</span>
-                </label>
-                <input type="file" id="excelFileInput" accept=".xlsx, .xls" style="display: none;">
-                
-                <button class="btn btn-header" id="btnExportExcel" title="Xuất Excel">
-                    <i class="fa-solid fa-file-export"></i> <span>Xuất Excel</span>
-                </button>
-                <button class="btn btn-header btn-accent" id="btnAddMain">
-                    <i class="fa-solid fa-user-plus"></i> <span>Thêm Nhân Khẩu</span>
+
+            <div id="houseFormFields" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-xs"></div>
+            <div class="flex justify-end space-x-3 pt-4 border-t">
+                <button type="button" onclick="closeModal('houseFormModal')" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-sm font-semibold rounded-lg">Hủy</button>
+                <button type="submit" class="px-5 py-2 bg-blue-900 hover:bg-blue-800 text-white text-sm font-semibold rounded-lg shadow">Lưu Hộ Khẩu</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ADD/EDIT MEMBER MODAL -->
+<div id="memberFormModal" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-4xl w-full p-6 max-h-[90vh] overflow-y-auto border-t-4 border-blue-900">
+        <div class="flex justify-between items-center mb-4 border-b pb-3">
+            <h3 id="memberFormTitle" class="text-lg font-bold text-blue-900 flex items-center">Thêm Nhân Khẩu</h3>
+            <button onclick="closeModal('memberFormModal')" class="text-slate-400 hover:text-slate-600 text-2xl font-bold">&times;</button>
+        </div>
+        <form id="memberForm" onsubmit="handleSaveMember(event)" class="space-y-4">
+            <div class="bg-slate-50 border p-4 rounded-xl flex flex-col sm:flex-row items-center gap-4">
+                <div class="w-24 h-24 bg-slate-200 border-2 border-dashed border-slate-400 rounded-lg overflow-hidden flex items-center justify-center relative flex-shrink-0">
+                    <img id="memberPhotoPreview" src="" class="w-full h-full object-cover hidden" alt="Ảnh thành viên">
+                    <i id="memberPhotoIcon" class="fa-solid fa-image text-slate-400 text-2xl"></i>
+                </div>
+                <div class="flex-grow space-y-2 text-xs w-full">
+                    <label class="block font-semibold uppercase text-slate-700">Ảnh chân dung nhân khẩu</label>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" onclick="openCameraModal('member')" class="bg-blue-900 hover:bg-blue-800 text-white px-3 py-2 rounded-lg font-semibold shadow flex items-center">
+                            <i class="fa-solid fa-camera mr-1.5"></i> Chụp trực tiếp
+                        </button>
+                        <label class="bg-emerald-700 hover:bg-emerald-600 text-white px-3 py-2 rounded-lg cursor-pointer shadow font-semibold flex items-center">
+                            <i class="fa-solid fa-image mr-1.5"></i> Chọn từ thư viện
+                            <input type="file" accept="image/*" onchange="handlePhotoFile(event, 'memberPhoto')" class="hidden">
+                        </label>
+                        <button type="button" onclick="removePhoto('memberPhoto')" class="bg-red-100 hover:bg-red-200 text-red-700 px-3 py-2 rounded-lg font-semibold">Xóa ảnh</button>
+                    </div>
+                </div>
+            </div>
+
+            <div id="memberFormFields" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 text-xs"></div>
+            <div class="flex justify-end space-x-3 pt-4 border-t">
+                <button type="button" onclick="closeModal('memberFormModal')" class="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-sm font-semibold rounded-lg">Hủy</button>
+                <button type="submit" class="px-5 py-2 bg-blue-900 hover:bg-blue-800 text-white text-sm font-semibold rounded-lg shadow">Lưu Nhân Khẩu</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- EXCEL IMPORT CONFLICT MODAL -->
+<div id="excelConflictModal" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border-t-4 border-orange-600">
+        <div class="text-center mb-4">
+            <div class="w-14 h-14 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center text-2xl mx-auto mb-3 shadow">
+                <i class="fa-solid fa-triangle-exclamation"></i>
+            </div>
+            <h3 class="text-lg font-bold text-slate-800">Xử Lý Dữ Liệu Nhập Excel</h3>
+            <p class="text-xs text-slate-600 mt-2">Hệ thống đã có sẵn dữ liệu. Bạn muốn xử lý thế nào?</p>
+        </div>
+        <div class="space-y-3 mt-4">
+            <button onclick="processExcelImportAction('overwrite')" class="w-full bg-red-600 hover:bg-red-700 text-white py-2.5 rounded-lg text-xs font-semibold shadow">GHI ĐÈ (Xóa cũ, dùng mới)</button>
+            <button onclick="processExcelImportAction('append')" class="w-full bg-blue-900 hover:bg-blue-800 text-white py-2.5 rounded-lg text-xs font-semibold shadow">THÊM TIẾP (Giữ cũ, gộp thêm)</button>
+            <button onclick="closeModal('excelConflictModal')" class="w-full bg-slate-200 hover:bg-slate-300 text-slate-700 py-2 rounded-lg text-xs font-semibold">Hủy</button>
+        </div>
+    </div>
+</div>
+
+<!-- MAIN APP CONTAINER -->
+<div class="flex flex-col min-h-screen">
+    <!-- HEADER -->
+    <header class="bg-blue-900 text-white shadow-lg border-b-4 border-amber-500">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col md:flex-row justify-between items-center gap-3">
+            <div class="flex items-center space-x-3 text-center md:text-left">
+                <div class="w-12 h-12 bg-white text-blue-900 rounded-full flex items-center justify-center text-xl shadow font-bold flex-shrink-0">
+                    <i class="fa-solid fa-shield-halved"></i>
+                </div>
+                <div>
+                    <h1 class="text-xs md:text-base font-bold uppercase tracking-wide">PHẦN MỀM QUẢN LÝ NHÂN HỘ KHẨU TỔ DÂN PHỐ 7 THÀNH CÔNG</h1>
+                    <p class="text-[10px] md:text-xs text-amber-300 font-medium">CÔNG AN PHƯỜNG BUÔN MA THUỘT</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-3 text-xs">
+                <div id="currentDateTime" class="bg-blue-950 px-3 py-1.5 rounded-lg font-mono border border-blue-800 shadow-inner"></div>
+                <button onclick="openModal('changePasswordModal')" class="bg-blue-800 hover:bg-blue-700 px-3 py-1.5 rounded-lg font-semibold flex items-center transition shadow whitespace-nowrap">
+                    <i class="fa-solid fa-key mr-1.5 text-amber-300"></i> Đổi MK
                 </button>
             </div>
         </div>
     </header>
 
-    <main class="app-container">
+    <!-- FUNCTION TOOLBAR -->
+    <nav class="bg-white shadow-md border-b sticky top-0 z-30">
+        <div class="max-w-7xl mx-auto px-4 py-2.5 flex flex-wrap items-center justify-between gap-2">
+            <div class="flex flex-wrap items-center gap-1.5 sm:gap-2">
+                <button onclick="openAddHouseModal()" class="bg-blue-900 hover:bg-blue-800 text-white px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg text-xs font-semibold shadow flex items-center transition">
+                    <i class="fa-solid fa-plus mr-1 text-amber-300"></i> Thêm hộ
+                </button>
+                <label class="bg-emerald-700 hover:bg-emerald-600 text-white px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg text-xs font-semibold shadow flex items-center cursor-pointer transition">
+                    <i class="fa-solid fa-file-excel mr-1 text-amber-300"></i> Nhập Excel
+                    <input type="file" id="excelFileInput" accept=".xlsx, .xls" onchange="handleExcelFileSelect(event)" class="hidden">
+                </label>
+                <button onclick="exportExcelFile()" class="bg-cyan-700 hover:bg-cyan-600 text-white px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg text-xs font-semibold shadow flex items-center transition">
+                    <i class="fa-solid fa-file-arrow-down mr-1 text-amber-300"></i> Xuất Excel
+                </button>
+                <button onclick="openStatsModal()" class="bg-indigo-700 hover:bg-indigo-600 text-white px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg text-xs font-semibold shadow flex items-center transition">
+                    <i class="fa-solid fa-chart-pie mr-1 text-amber-300"></i> Thống kê
+                </button>
+                <button onclick="confirmClearAllData()" class="bg-red-600 hover:bg-red-700 text-white px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-lg text-xs font-semibold shadow flex items-center transition">
+                    <i class="fa-solid fa-trash-can mr-1"></i> Xóa hết
+                </button>
+            </div>
+            <div class="flex items-center space-x-2">
+                <button onclick="backupJSON()" class="bg-slate-700 hover:bg-slate-800 text-white px-2 py-1.5 rounded-lg text-xs font-medium" title="Sao lưu JSON">
+                    <i class="fa-solid fa-download"></i> Backup
+                </button>
+                <label class="bg-slate-700 hover:bg-slate-800 text-white px-2 py-1.5 rounded-lg text-xs font-medium cursor-pointer" title="Phục hồi JSON">
+                    <i class="fa-solid fa-upload"></i> Restore
+                    <input type="file" id="jsonFileInput" accept=".json" onchange="restoreJSON(event)" class="hidden">
+                </label>
+            </div>
+        </div>
+    </nav>
 
-        <!-- THỐNG KÊ TỔNG QUAN -->
-        <section class="stat-cards">
-            <div class="stat-card">
-                <div class="stat-icon bg-blue"><i class="fa-solid fa-house-chimney"></i></div>
-                <div class="stat-info">
-                    <span class="stat-value" id="statTotalHoGiaDinh">0</span>
-                    <span class="stat-label">Tổng số hộ gia đình</span>
+    <!-- MAIN CONTENT AREA -->
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-grow w-full">
+        <!-- ADVANCED SEARCH PANEL -->
+        <div class="bg-white rounded-xl shadow-md p-4 mb-6 border">
+            <div class="flex flex-col sm:flex-row gap-3">
+                <!-- Dropdown chọn tiêu chí tìm kiếm -->
+                <div class="sm:w-1/3">
+                    <label class="block text-[10px] uppercase font-bold text-slate-500 mb-1">Tìm kiếm theo tiêu chí</label>
+                    <select id="searchCriteria" onchange="handleSearchInput()" class="w-full px-3 py-3 text-xs bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:outline-none font-semibold text-blue-900">
+                        <option value="all">🌟 Tất cả các trường (Mặc định)</option>
+                        <option value="Họ tên">👤 Họ và tên (Thành viên/Chủ hộ)</option>
+                        <option value="SHK">🆔 Số Hộ Khẩu (SHK)</option>
+                        <option value="Căn cước">🪪 Số Căn cước / CMND</option>
+                        <option value="Số ĐT">📞 Số điện thoại</option>
+                        <option value="Nơi thường trú">🏠 Địa chỉ thường trú</option>
+                        <option value="Năm sinh">📅 Năm sinh / Ngày sinh</option>
+                        <option value="Hệ loại đối tượng">🏷️ Hệ loại đối tượng</option>
+                        <option value="Ghi chú">📝 Ghi chú</option>
+                    </select>
                 </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon bg-green"><i class="fa-solid fa-users"></i></div>
-                <div class="stat-info">
-                    <span class="stat-value" id="statTotalNhanKhau">0</span>
-                    <span class="stat-label">Tổng nhân khẩu</span>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon bg-cyan"><i class="fa-solid fa-mars"></i></div>
-                <div class="stat-info">
-                    <span class="stat-value" id="statTotalNam">0</span>
-                    <span class="stat-label">Tổng số nam</span>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon bg-pink"><i class="fa-solid fa-venus"></i></div>
-                <div class="stat-info">
-                    <span class="stat-value" id="statTotalNu">0</span>
-                    <span class="stat-label">Tổng số nữ</span>
-                </div>
-            </div>
-            <div class="stat-card">
-                <div class="stat-icon bg-orange"><i class="fa-solid fa-building-flag"></i></div>
-                <div class="stat-info">
-                    <span class="stat-value" id="statTotalTDP">0</span>
-                    <span class="stat-label">Tổ dân phố</span>
-                </div>
-            </div>
-        </section>
-
-        <!-- SEARCH & FILTER -->
-        <section class="filter-section card">
-            <div class="search-box">
-                <i class="fa-solid fa-magnifying-glass search-icon"></i>
-                <input type="text" id="searchInput" placeholder="Tìm theo tên chủ hộ, Số hộ khẩu, số nhà, căn cước...">
-            </div>
-
-            <!-- Bộ lọc nâng cao -->
-            <div id="advancedSearchPanel" class="advanced-search-panel">
-                <div class="form-group">
-                    <label>Lọc theo Dân tộc</label>
-                    <input type="text" id="advFilterDanToc" placeholder="VD: Kinh, Ê Đê...">
-                </div>
-                <div class="form-group">
-                    <label>Lọc theo Tôn giáo</label>
-                    <input type="text" id="advFilterTonGiao" placeholder="VD: Không, Công giáo...">
-                </div>
-                <div class="form-group" style="display: flex; align-items: flex-end;">
-                    <button type="button" class="btn btn-secondary w-100" id="btnResetAdvSearch" style="width: 100%;">Xóa lọc nâng cao</button>
-                </div>
-            </div>
-
-            <div class="filter-controls">
-                <div class="filter-left">
-                    <div class="filter-group">
-                        <label><i class="fa-solid fa-filter"></i> TDP:</label>
-                        <select id="filterTDP"><option value="">-- Tất cả TDP --</option></select>
+                <!-- Ô nhập nội dung tìm kiếm -->
+                <div class="sm:w-2/3 relative flex items-center">
+                    <div class="w-full relative">
+                        <label class="block text-[10px] uppercase font-bold text-slate-500 mb-1">Từ khóa cần tìm</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 flex items-center pl-4 text-slate-400">
+                                <i class="fa-solid fa-magnifying-glass"></i>
+                            </span>
+                            <input type="text" id="searchInput" oninput="handleSearchInput()" placeholder="Nhập từ khóa tìm kiếm..." class="w-full pl-11 pr-10 py-3 text-sm bg-slate-50 border border-slate-300 rounded-lg focus:ring-2 focus:ring-blue-900 focus:outline-none">
+                            <button onclick="clearSearch()" class="absolute inset-y-0 right-0 flex items-center pr-4 text-slate-400 hover:text-slate-600 hidden pt-5" id="clearSearchBtn">
+                                <i class="fa-solid fa-circle-xmark text-lg"></i>
+                            </button>
+                        </div>
                     </div>
-                    <div class="filter-group">
-                        <label><i class="fa-solid fa-sort"></i> Sắp xếp:</label>
-                        <select id="sortOption">
-                            <option value="AZ">Chủ hộ A → Z</option>
-                            <option value="ZA">Chủ hộ Z → A</option>
-                            <option value="COUNT_DESC">Số thành viên nhiều nhất</option>
-                        </select>
-                    </div>
-                    <button class="btn btn-outline btn-sm" id="btnToggleAdvanced">
-                        <i class="fa-solid fa-sliders"></i> Bộ lọc nâng cao
-                    </button>
                 </div>
             </div>
-        </section>
+            <div class="flex flex-wrap items-center justify-between mt-3 text-xs text-slate-500 px-1">
+                <div id="searchStatsText">Hiển thị toàn bộ danh sách hộ</div>
+            </div>
+        </div>
 
-        <!-- DANH SÁCH HỘ GIA ĐÌNH -->
-        <section class="list-section">
-            <div id="hoGiaDinhContainer" class="grid-cards"></div>
-            <div class="pagination-container" id="pagination"></div>
-        </section>
-
+        <div id="houseListContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+        <div id="paginationContainer" class="flex justify-center items-center space-x-2 mt-8"></div>
     </main>
 
-    <!-- MODAL FORM THỐNG KÊ CHI TIẾT -->
-    <div id="modalStat" class="modal">
-        <div class="modal-content modal-lg">
-            <div class="modal-header">
-                <h2><i class="fa-solid fa-chart-pie"></i> Báo Cáo Thống Kê Tổng Hợp Cư Trú</h2>
-                <span class="close-modal" onclick="closeModal('modalStat')">&times;</span>
-            </div>
-            <div class="modal-body" id="statModalBody"></div>
+    <!-- FOOTER -->
+    <footer class="bg-blue-950 text-white text-xs py-4 text-center border-t border-blue-900 mt-10">
+        <div class="max-w-7xl mx-auto px-4">
+            <p>PHẦN MỀM QUẢN LÝ NHÂN HỘ KHẨU - TỔ DÂN PHỐ 7 THÀNH CÔNG, PHƯỜNG BUÔN MA THUỘT</p>
+            <p class="text-slate-400 mt-1">Ứng dụng hoạt động Offline trực tiếp trên trình duyệt di động và máy tính.</p>
         </div>
-    </div>
+    </footer>
+</div>
 
-    <!-- MODAL CHI TIẾT HỘ GIA ĐÌNH (GỒM CÁC THÀNH VIÊN) -->
-    <div id="modalDetail" class="modal">
-        <div class="modal-content modal-lg">
-            <div class="modal-header">
-                <h2><i class="fa-solid fa-house-user"></i> Chi Tiết Hộ Gia Đình</h2>
-                <span class="close-modal" onclick="closeModal('modalDetail')">&times;</span>
-            </div>
-            <div class="modal-body" id="detailBody"></div>
-        </div>
-    </div>
+<!-- JAVASCRIPT APP LOGIC -->
+<script>
+    let excelColumns = [
+        'TT', 'SHK', 'QH với CH', 'Họ tên CH', 'Họ tên', 'Năm sinh', 'Giới tính', 'Dân tộc', 'Tôn giáo', 
+        'Quốc tịch', 'Quê quán', 'Căn cước', 'CMND', 'Hộ chiếu', 'Số ĐT', 'Nơi thường trú', 'Nơi ở hiện nay', 
+        'TDP', 'Tình trạng hôn nhân', 'Học vấn', 'Nghề nghiệp', 'Nơi làm việc', 'Tên cha', 'ĐDCN Cha', 'QT Cha', 
+        'Tên Mẹ', 'ĐDCN Mẹ', 'QT Mẹ', 'Tên V/C', 'ĐDCN V/C', 'QT V/C', 'Ngày chuyển đến', 'Ở đâu đến', 
+        'Ngày chuyển đi', 'Nơi chuyển đi', 'Tình trạng nhà ở', 'Hệ loại đối tượng', 'Chi tiết đối tượng', 'Ghi chú'
+    ];
 
-    <!-- MODAL FORM THÊM / SỬA NHÂN KHẨU -->
-    <div id="modalForm" class="modal">
-        <div class="modal-content modal-md">
-            <div class="modal-header">
-                <h2 id="formTitle"><i class="fa-solid fa-user-pen"></i> Thêm Nhân Khẩu Mới</h2>
-                <span class="close-modal" onclick="closeModal('modalForm')">&times;</span>
-            </div>
-            <div class="modal-body">
-                <form id="nhanKhauForm">
-                    <input type="hidden" id="editIndex" value="-1">
-                    
-                    <div class="avatar-upload-section">
-                        <div class="avatar-preview">
-                            <img id="imgPreview" src="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24'><path fill='%23ccc' d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/></svg>" alt="Avatar" onclick="openLightbox(this.src)">
-                        </div>
+    const initialSampleData = [
+        {"TT": 1, "SHK": "24133-006871", "QH với CH": "Chủ hộ", "Họ tên CH": "QUÁCH THÁI SƠN", "Họ tên": "QUÁCH THÁI SƠN", "Năm sinh": "01/01/1975", "Giới tính": "Nam", "Dân tộc": "Kinh", "Tôn giáo": "Không", "Quốc tịch": "Việt Nam", "Căn cước": "066075001234", "Số ĐT": "0912345678", "Nơi thường trú": "29 Hẻm Phạm Ngũ Lão", "TDP": "7 Thành Công", "Tình trạng nhà ở": "Sở hữu tư nhân", "Hệ loại đối tượng": "Bình thường", "Chi tiết đối tượng": "Không", "Ghi chú": "", "Ngày chuyển đi": "", "photo": ""},
+        {"TT": null, "SHK": "24133-006871", "QH với CH": "Vợ", "Họ tên CH": "QUÁCH THÁI SƠN", "Họ tên": "ĐỖ THỊ CẨM NHUNG", "Năm sinh": "18/06/1980", "Giới tính": "Nữ", "Dân tộc": "Kinh", "Tôn giáo": "Không", "Quốc tịch": "Việt Nam", "Căn cước": "066180005678", "Số ĐT": "0988765432", "Nơi thường trú": "Phạm Ngũ Lão", "TDP": "7 Thành Công", "Tình trạng nhà ở": "Sở hữu tư nhân", "Hệ loại đối tượng": "Bình thường", "Chi tiết đối tượng": "Không", "Ghi chú": "", "Ngày chuyển đi": "", "photo": ""},
+        {"TT": 2, "SHK": "24133-043489", "QH với CH": "Chủ hộ", "Họ tên CH": "NGUYỄN CỬU NHƯ", "Họ tên": "NGUYỄN CỬU NHƯ", "Năm sinh": "10/08/1950", "Giới tính": "Nam", "Dân tộc": "Kinh", "Tôn giáo": "Không", "Quốc tịch": "Việt Nam", "Căn cước": "066050009999", "Số ĐT": "0905999888", "Nơi thường trú": "15 Lê Duẩn", "TDP": "7 Thành Công", "Tình trạng nhà ở": "Thuê nhà", "Hệ loại đối tượng": "Cao tuổi", "Chi tiết đối tượng": "Người cao tuổi trên 70", "Ghi chú": "Sức khỏe yếu", "Ngày chuyển đi": "", "photo": ""}
+    ];
 
-                        <!-- KHUNG CAMERA TRỰC TIẾP -->
-                        <div id="cameraLiveContainer" style="display:none; text-align:center; width: 100%; margin-top: 10px;">
-                            <video id="cameraVideo" autoplay playsinline muted style="width:100%; max-height:280px; background:#000; border-radius:8px; object-fit:cover;"></video>
-                            <div style="margin-top: 8px; display:flex; gap:10px; justify-content:center;">
-                                <button type="button" class="btn btn-sm btn-accent" id="btnCaptureNow"><i class="fa-solid fa-camera"></i> Bấm Chụp Ảnh</button>
-                                <button type="button" class="btn btn-sm btn-secondary" id="btnCloseCamera"><i class="fa-solid fa-xmark"></i> Đóng Camera</button>
-                            </div>
-                        </div>
-                        <canvas id="cameraCanvas" style="display:none;"></canvas>
+    let populationData = [];
+    let pendingExcelData = null;
+    let currentPage = 1;
+    let rowsPerPage = 6;
+    let currentSearchQuery = "";
+    let currentSearchCriteria = "all";
+    let currentHouseForDetail = null;
+    let editingHouseSHK = null;
+    let editingMemberIndex = null;
+    let currentPhotoBase64 = "";
+    let activeCameraType = ""; 
+    let mediaStream = null;
 
-                        <div class="avatar-buttons" style="display:flex; gap:6px; flex-wrap:wrap; justify-content:center; margin-top: 8px;">
-                            <button type="button" class="btn btn-sm btn-primary" id="btnOpenLiveCam"><i class="fa-solid fa-video"></i> Mở Camera Trực Tiếp</button>
-                            <label for="cameraBackInput" class="btn btn-sm btn-outline" style="cursor: pointer;"><i class="fa-solid fa-camera"></i> Cam Sau</label>
-                            <input type="file" id="cameraBackInput" accept="image/*" capture="environment" style="display:none;">
+    window.addEventListener('DOMContentLoaded', () => {
+        checkAuth();
+        loadDataFromStorage();
+        updateDateTime();
+        setInterval(updateDateTime, 1000);
+        renderHouseList();
+    });
 
-                            <label for="cameraFrontInput" class="btn btn-sm btn-outline" style="cursor: pointer;"><i class="fa-solid fa-camera-rotate"></i> Cam Trước</label>
-                            <input type="file" id="cameraFrontInput" accept="image/*" capture="user" style="display:none;">
+    function updateDateTime() {
+        const now = new Date();
+        const options = { weekday: 'long', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+        document.getElementById('currentDateTime').innerText = now.toLocaleDateString('vi-VN', options);
+    }
 
-                            <label for="galleryInput" class="btn btn-sm btn-outline" style="cursor: pointer;"><i class="fa-solid fa-image"></i> Thư viện</label>
-                            <input type="file" id="galleryInput" accept="image/*" style="display:none;">
-                        </div>
-                        <input type="hidden" id="formBase64Image">
-                    </div>
+    function checkAuth() {
+        if (!localStorage.getItem('app_password')) {
+            localStorage.setItem('app_password', 'Dancu@123');
+        }
+        if (sessionStorage.getItem('isLoggedIn') !== 'true') {
+            document.getElementById('loginModal').classList.remove('hidden');
+        }
+    }
 
-                    <div class="form-grid">
-                        <div class="form-group">
-                            <label>Họ và Tên <span class="required">*</span></label>
-                            <input type="text" id="formHoTen" required placeholder="Nguyễn Văn A">
-                        </div>
-                        <div class="form-group">
-                            <label>Số Hộ Khẩu (SHK) <span class="required">*</span></label>
-                            <input type="text" id="formSHK" required placeholder="HK-001">
-                        </div>
-                        <div class="form-group">
-                            <label>Ngày Tháng Năm Sinh</label>
-                            <input type="text" id="formNamSinh" placeholder="DD/MM/YYYY hoặc YYYY">
-                        </div>
-                        <div class="form-group">
-                            <label>Giới Tính</label>
-                            <select id="formGioiTinh">
-                                <option value="Nam">Nam</option>
-                                <option value="Nữ">Nữ</option>
-                                <option value="Khác">Khác</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label>Quan Hệ Với Chủ Hộ <span class="required">*</span></label>
-                            <input type="text" id="formQH" placeholder="Chủ hộ / Vợ / Con..." required>
-                        </div>
-                        <div class="form-group">
-                            <label>Họ Tên Chủ Hộ <span class="required">*</span></label>
-                            <input type="text" id="formHoTenCH" required placeholder="Nhập tên Chủ Hộ">
-                        </div>
-                        <div class="form-group">
-                            <label>Số Căn Cước (CCCD/CMND)</label>
-                            <input type="text" id="formCanCuoc" placeholder="001084012345">
-                        </div>
-                        <div class="form-group">
-                            <label>Số Điện Thoại</label>
-                            <input type="tel" id="formSoDT" placeholder="0912345678">
-                        </div>
-                        <div class="form-group">
-                            <label>Dân Tộc</label>
-                            <input type="text" id="formDanToc" placeholder="Kinh">
-                        </div>
-                        <div class="form-group">
-                            <label>Tôn Giáo</label>
-                            <input type="text" id="formTonGiao" placeholder="Không">
-                        </div>
-                        <div class="form-group">
-                            <label>Tổ Dân Phố (TDP) <span class="required">*</span></label>
-                            <input type="text" id="formTDP" required placeholder="TDP Số 7">
-                        </div>
-                        <div class="form-group">
-                            <label>Quê Quán</label>
-                            <input type="text" id="formQueQuan" placeholder="Đắk Lắk">
-                        </div>
-                        <div class="form-group">
-                            <label>Số Nhà</label>
-                            <input type="text" id="formSoNha" placeholder="Số 12">
-                        </div>
-                        <div class="form-group full-width">
-                            <label>Nơi Thường Trú <span class="required">*</span></label>
-                            <input type="text" id="formThuongTru" required placeholder="Phường Buôn Ma Thuột, tỉnh Đắk Lắk">
-                        </div>
-                        <div class="form-group full-width">
-                            <label>Nơi Cư Trú / Hiện Tại</label>
-                            <input type="text" id="formCuTru" placeholder="Số 12 Phường Buôn Ma Thuột">
-                        </div>
-                        <div class="form-group">
-                            <label>Tên Cha</label>
-                            <input type="text" id="formTenCha" placeholder="Họ tên cha">
-                        </div>
-                        <div class="form-group">
-                            <label>Tên Mẹ</label>
-                            <input type="text" id="formTenMe" placeholder="Họ tên mẹ">
-                        </div>
-                        <div class="form-group full-width">
-                            <label>Ghi Chú</label>
-                            <textarea id="formGhiChu" rows="2" placeholder="Ghi chú thêm..."></textarea>
-                        </div>
-                    </div>
+    function handleLogin(e) {
+        e.preventDefault();
+        const pass = document.getElementById('loginPassword').value;
+        const stored = localStorage.getItem('app_password');
+        if (pass === stored || pass === 'Dancu@123') {
+            sessionStorage.setItem('isLoggedIn', 'true');
+            document.getElementById('loginModal').classList.add('hidden');
+        } else {
+            const err = document.getElementById('loginError');
+            err.innerText = "Mật khẩu không chính xác!";
+            err.classList.remove('hidden');
+        }
+    }
 
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-secondary" onclick="closeModal('modalForm')">Hủy</button>
-                        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Lưu Dữ Liệu</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
+    function handleChangePassword(e) {
+        e.preventDefault();
+        const cur = document.getElementById('currentPassword').value;
+        const neo = document.getElementById('newPassword').value;
+        const confirm = document.getElementById('confirmPassword').value;
+        const err = document.getElementById('changePassError');
+        
+        const stored = localStorage.getItem('app_password') || 'Dancu@123';
+        if (cur !== stored && cur !== 'Dancu@123') {
+            err.innerText = "Mật khẩu hiện tại không đúng!";
+            err.classList.remove('hidden');
+            return;
+        }
+        if (neo.length < 8 || !/[!@#$%^&*(),.?":{}|<>]/.test(neo)) {
+            err.innerText = "Mật khẩu mới tối thiểu 8 ký tự và có ký tự đặc biệt!";
+            err.classList.remove('hidden');
+            return;
+        }
+        if (neo !== confirm) {
+            err.innerText = "Hai mật khẩu mới không khớp nhau!";
+            err.classList.remove('hidden');
+            return;
+        }
 
-    <!-- LIGHTBOX -->
-    <div id="lightboxModal" class="lightbox-modal" onclick="closeLightbox()">
-        <span class="lightbox-close">&times;</span>
-        <img class="lightbox-content" id="lightboxImg">
-    </div>
+        localStorage.setItem('app_password', neo);
+        alert("Đổi mật khẩu thành công!");
+        closeModal('changePasswordModal');
+        document.getElementById('changePasswordForm').reset();
+        err.classList.add('hidden');
+    }
 
-    <!-- TOAST NOTIFICATION -->
-    <div id="toast" class="toast"><i class="fa-solid fa-circle-check" style="color: #28a745;"></i> <span id="toastMsg">Thành công!</span></div>
+    function formatDateVN(val) {
+        if (val === undefined || val === null || val === '') return '';
+        let strVal = String(val).trim();
 
-    <!-- JAVASCRIPT LOGIC -->
-    <script>
-        // DỮ LIỆU MẪU BAN ĐẦU
-        let nhanKhauData = [
-            {
-                stt: 1, hoTen: "Nguyễn Văn An", shk: "HK-001", namSinh: "15/05/1980", gioiTinh: "Nam",
-                quanHe: "Chủ hộ", hoTenCH: "Nguyễn Văn An", canCuoc: "066080001234", soDT: "0905123456",
-                danToc: "Kinh", tonGiao: "Không", tdp: "TDP 7", queQuan: "Đắk Lắk", soNha: "15",
-                thuongTru: "15 Lê Duẩn, Tổ 7, Phường Buôn Ma Thuột", cuTru: "15 Lê Duẩn, Phường Buôn Ma Thuột",
-                tenCha: "Nguyễn Văn Bình", tenMe: "Trần Thị Hoa", ghiChu: "", avatar: ""
-            },
-            {
-                stt: 2, hoTen: "Lê Thị Mai", shk: "HK-001", namSinh: "20/10/1985", gioiTinh: "Nữ",
-                quanHe: "Vợ", hoTenCH: "Nguyễn Văn An", canCuoc: "066185005678", soDT: "0905654321",
-                danToc: "Kinh", tonGiao: "Phật giáo", tdp: "TDP 7", queQuan: "Quảng Nam", soNha: "15",
-                thuongTru: "15 Lê Duẩn, Tổ 7, Phường Buôn Ma Thuột", cuTru: "15 Lê Duẩn, Phường Buôn Ma Thuột",
-                tenCha: "Lê Văn Hùng", tenMe: "Phạm Thị Lan", ghiChu: "", avatar: ""
-            },
-            {
-                stt: 3, hoTen: "Y Jút Niê", shk: "HK-002", namSinh: "12/02/1990", gioiTinh: "Nam",
-                quanHe: "Chủ hộ", hoTenCH: "Y Jút Niê", canCuoc: "066090009999", soDT: "0988111222",
-                danToc: "Ê Đê", tonGiao: "Tin lành", tdp: "TDP 7", queQuan: "Đắk Lắk", soNha: "42",
-                thuongTru: "42 Y Jút, Tổ 7, Phường Buôn Ma Thuột", cuTru: "42 Y Jút, Phường Buôn Ma Thuột",
-                tenCha: "Ama H'Wing", tenMe: "H'Dắt Niê", ghiChu: "", avatar: ""
+        let num = Number(strVal);
+        if (!isNaN(num) && num > 1000 && num < 60000) {
+            const utcDays = Math.floor(num - 25569);
+            const utcValue = utcDays * 86400;
+            const dateInfo = new Date(utcValue * 1000);
+            if (!isNaN(dateInfo.getTime())) {
+                const y = dateInfo.getUTCFullYear();
+                const m = String(dateInfo.getUTCMonth() + 1).padStart(2, '0');
+                const d = String(dateInfo.getUTCDate()).padStart(2, '0');
+                return `${d}/${m}/${y}`;
             }
-        ];
+        }
 
-        let appPassword = localStorage.getItem("bmt_app_pass") || "123456";
-        let registeredFaceDescriptor = JSON.parse(localStorage.getItem("bmt_face_desc")) || null;
-        let isFaceAuthActive = false;
-        let authMediaStream = null;
-        let formMediaStream = null;
-        let currentPage = 1;
-        const itemsPerPage = 6;
-        let activeCameraId = 'environment';
+        if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(strVal)) {
+            const parts = strVal.split('-');
+            return `${parts[2].padStart(2, '0')}/${parts[1].padStart(2, '0')}/${parts[0]}`;
+        }
 
-        document.addEventListener("DOMContentLoaded", () => {
-            loadFromLocalStorage();
-            initAuthSystem();
-            initEventListeners();
-            renderApp();
+        return strVal;
+    }
+
+    function loadDataFromStorage() {
+        const saved = localStorage.getItem('tdp7_population_data');
+        if (saved) {
+            try { populationData = JSON.parse(saved); } catch (e) { populationData = initialSampleData; }
+        } else {
+            populationData = initialSampleData;
+            saveDataToStorage();
+        }
+    }
+
+    function saveDataToStorage() {
+        localStorage.setItem('tdp7_population_data', JSON.stringify(populationData));
+    }
+
+    function removeAccents(str) {
+        if (!str) return "";
+        return str.toString().toLowerCase()
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/đ/g, "d").replace(/Đ/g, "D");
+    }
+
+    function getHouseholds() {
+        const map = {};
+        populationData.forEach((person, idx) => {
+            const shk = person['SHK'] || 'KHÔNG_CÓ_SHK';
+            if (!map[shk]) {
+                map[shk] = { shk: shk, members: [], head: null };
+            }
+            map[shk].members.push({ ...person, _originalIndex: idx });
         });
 
-        function loadFromLocalStorage() {
-            const saved = localStorage.getItem("bmt_nhankhau_data");
-            if (saved) {
-                try { nhanKhauData = JSON.parse(saved); } catch(e) {}
+        const houses = Object.values(map);
+        houses.forEach(house => {
+            let head = house.members.find(m => removeAccents(m['QH với CH']) === 'chu ho' || removeAccents(m['QH với CH']) === 'chu ho gia dinh');
+            if (!head && house.members.length > 0) {
+                const firstMemberWithNameCH = house.members.find(m => m['Họ tên CH'] && removeAccents(m['Họ tên']) === removeAccents(m['Họ tên CH']));
+                head = firstMemberWithNameCH || house.members[0];
+            }
+            house.head = head || house.members[0];
+        });
+        return houses;
+    }
+
+    function handlePhotoFile(e, typePrefix) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            currentPhotoBase64 = evt.target.result;
+            setPhotoPreview(currentPhotoBase64, typePrefix);
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function removePhoto(typePrefix) {
+        currentPhotoBase64 = "";
+        setPhotoPreview("", typePrefix);
+    }
+
+    function setPhotoPreview(base64Str, typePrefix) {
+        currentPhotoBase64 = base64Str || "";
+        const preview = document.getElementById(typePrefix + 'Preview');
+        const icon = document.getElementById(typePrefix + 'Icon');
+        if (preview && icon) {
+            if (currentPhotoBase64) {
+                preview.src = currentPhotoBase64;
+                preview.classList.remove('hidden');
+                icon.classList.add('hidden');
+            } else {
+                preview.src = "";
+                preview.classList.add('hidden');
+                icon.classList.remove('hidden');
             }
         }
+    }
 
-        function saveToLocalStorage() {
-            localStorage.setItem("bmt_nhankhau_data", JSON.stringify(nhanKhauData));
+    async function openCameraModal(type) {
+        activeCameraType = type;
+        document.getElementById('cameraModal').classList.remove('hidden');
+        const video = document.getElementById('liveCameraStream');
+        try {
+            mediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'user' }, audio: false });
+            video.srcObject = mediaStream;
+        } catch (err) {
+            alert("Không thể truy cập camera: " + err.message);
+            closeCameraModal();
         }
+    }
 
-        // HỆ THỐNG XÁC THỰC BẢO MẬT & FACE-API
-        function initAuthSystem() {
-            const overlay = document.getElementById("authOverlay");
-            const passInput = document.getElementById("authPasswordInput");
-            const confirmPassInput = document.getElementById("authConfirmPasswordInput");
-            const btnSubmit = document.getElementById("btnAuthSubmit");
-            const btnFaceToggle = document.getElementById("btnFaceUnlockToggle");
-            const errDiv = document.getElementById("authError");
-            
-            let isSetupMode = !localStorage.getItem("bmt_app_pass");
-            if (isSetupMode) {
-                document.getElementById("authTitle").innerText = "Tạo Mật Khẩu Lần Đầu";
-                document.getElementById("authDesc").innerText = "Vui lòng thiết lập mật khẩu bảo vệ ứng dụng cư trú.";
-                confirmPassInput.style.display = "block";
-                btnSubmit.innerHTML = '<i class="fa-solid fa-check"></i> Thiết lập mật khẩu';
-            }
-
-            btnSubmit.onclick = () => {
-                const val = passInput.value.trim();
-                if (isSetupMode) {
-                    const confirmVal = confirmPassInput.value.trim();
-                    if (val.length < 4) {
-                        errDiv.innerText = "Mật khẩu phải có ít nhất 4 ký tự!";
-                        errDiv.style.display = "block";
-                        return;
-                    }
-                    if (val !== confirmVal) {
-                        errDiv.innerText = "Mật khẩu xác nhận không khớp!";
-                        errDiv.style.display = "block";
-                        return;
-                    }
-                    appPassword = val;
-                    localStorage.setItem("bmt_app_pass", appPassword);
-                    stopAuthCamera();
-                    overlay.style.display = "none";
-                    showToast("Thiết lập mật khẩu thành công!");
-                } else {
-                    if (val === appPassword) {
-                        stopAuthCamera();
-                        overlay.style.display = "none";
-                        showToast("Xác thực thành công!");
-                    } else {
-                        errDiv.innerText = "Mật khẩu không chính xác!";
-                        errDiv.style.display = "block";
-                    }
-                }
-            };
-
-            btnFaceToggle.onclick = async () => {
-                const container = document.getElementById("faceUnlockContainer");
-                if (container.style.display === "block") {
-                    stopAuthCamera();
-                    container.style.display = "none";
-                    return;
-                }
-                container.style.display = "block";
-                await startAuthCamera(activeCameraId);
-                loadFaceApiModelsAndVerify();
-            };
-
-            document.getElementById("btnSwitchAuthCamera").onclick = async () => {
-                activeCameraId = activeCameraId === 'environment' ? 'user' : 'environment';
-                await startAuthCamera(activeCameraId);
-            };
-
-            document.getElementById("btnChangePass").onclick = () => {
-                const newP = prompt("Nhập mật khẩu mới (tối thiểu 4 ký tự):");
-                if (newP && newP.trim().length >= 4) {
-                    appPassword = newP.trim();
-                    localStorage.setItem("bmt_app_pass", appPassword);
-                    showToast("Đổi mật khẩu thành công!");
-                } else if (newP !== null) {
-                    alert("Mật khẩu không hợp lệ!");
-                }
-            };
-
-            document.getElementById("btnSetupFace").onclick = async () => {
-                if (confirm("Bạn muốn đăng ký khuôn mặt hiện tại để mở khóa ứng dụng?")) {
-                    await registerCurrentFace();
-                }
-            };
+    function closeCameraModal() {
+        if (mediaStream) {
+            mediaStream.getTracks().forEach(track => track.stop());
+            mediaStream = null;
         }
+        document.getElementById('cameraModal').classList.add('hidden');
+    }
 
-        async function startAuthCamera(facingMode) {
-            stopAuthCamera();
-            try {
-                authMediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: facingMode } });
-                const video = document.getElementById("faceVideo");
-                video.srcObject = authMediaStream;
-            } catch (e) {
-                alert("Không thể mở camera: " + e.message);
-            }
-        }
+    function takeLiveSnapshot() {
+        const video = document.getElementById('liveCameraStream');
+        const canvas = document.getElementById('liveCameraCanvas');
+        canvas.width = video.videoWidth || 640;
+        canvas.height = video.videoHeight || 480;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+        const dataUrl = canvas.toDataURL('image/jpeg');
 
-        function stopAuthCamera() {
-            isFaceAuthActive = false;
-            if (authMediaStream) {
-                authMediaStream.getTracks().forEach(track => track.stop());
-                authMediaStream = null;
-            }
-        }
+        const prefix = activeCameraType === 'house' ? 'housePhoto' : 'memberPhoto';
+        setPhotoPreview(dataUrl, prefix);
+        closeCameraModal();
+    }
 
-        async function loadFaceApiModelsAndVerify() {
-            const statusMsg = document.getElementById("faceStatusMsg");
-            statusMsg.innerText = "Đang tải mô hình nhận diện...";
-            try {
-                const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model/';
-                await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
-                await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
-                await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
-                statusMsg.innerText = "Đang quét khuôn mặt...";
+    function renderHouseList() {
+        const container = document.getElementById('houseListContainer');
+        const houses = getHouseholds();
+        
+        currentSearchQuery = document.getElementById('searchInput').value;
+        currentSearchCriteria = document.getElementById('searchCriteria').value;
+        const q = removeAccents(currentSearchQuery);
 
-                isFaceAuthActive = true;
-                verifyFaceLoop();
-            } catch (e) {
-                statusMsg.innerText = "Lỗi tải mô hình nhận diện!";
-            }
-        }
-
-        async function verifyFaceLoop() {
-            if (!isFaceAuthActive) return;
-            const video = document.getElementById("faceVideo");
-            const statusMsg = document.getElementById("faceStatusMsg");
-
-            if (!video || video.paused || video.ended) {
-                if (isFaceAuthActive) setTimeout(verifyFaceLoop, 200);
-                return;
-            }
-
-            try {
-                const detection = await faceapi.detectSingleFace(video).withFaceLandmarks().withFaceDescriptor();
-                if (detection) {
-                    if (!registeredFaceDescriptor) {
-                        statusMsg.innerText = "Chưa đăng ký khuôn mặt nào trong hệ thống!";
-                    } else {
-                        const distance = faceapi.euclideanDistance(detection.descriptor, new Float32Array(registeredFaceDescriptor));
-                        if (distance < 0.45) {
-                            statusMsg.innerText = "Nhận diện thành công! Đang mở khóa...";
-                            isFaceAuthActive = false;
-                            setTimeout(() => {
-                                stopAuthCamera();
-                                document.getElementById("authOverlay").style.display = "none";
-                                showToast("Đăng nhập bằng khuôn mặt thành công!");
-                            }, 800);
-                            return;
-                        } else {
-                            statusMsg.innerText = "Không khớp khuôn mặt (" + distance.toFixed(2) + ")";
-                        }
-                    }
-                } else {
-                    statusMsg.innerText = "Không tìm thấy khuôn mặt...";
-                }
-            } catch (err) {
-                // Bỏ qua lỗi khung hình ngắt quãng
-            }
-            if (isFaceAuthActive) setTimeout(verifyFaceLoop, 1000);
-        }
-
-        async function registerCurrentFace() {
-            try {
-                const MODEL_URL = 'https://cdn.jsdelivr.net/npm/@vladmandic/face-api@1.7.12/model/';
-                await faceapi.nets.ssdMobilenetv1.loadFromUri(MODEL_URL);
-                await faceapi.nets.faceLandmark68Net.loadFromUri(MODEL_URL);
-                await faceapi.nets.faceRecognitionNet.loadFromUri(MODEL_URL);
-
-                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-                const video = document.createElement("video");
-                video.srcObject = stream;
-                await video.play();
-
-                setTimeout(async () => {
-                    const detection = await faceapi.detectSingleFace(video).withFaceLandmarks().withFaceDescriptor();
-                    stream.getTracks().forEach(t => t.stop());
-                    if (detection) {
-                        registeredFaceDescriptor = Array.from(detection.descriptor);
-                        localStorage.setItem("bmt_face_desc", JSON.stringify(registeredFaceDescriptor));
-                        showToast("Đăng ký khuôn mặt thành công!");
-                    } else {
-                        alert("Không phát hiện được khuôn mặt để đăng ký. Hãy thử lại!");
-                    }
-                }, 1500);
-            } catch (e) {
-                alert("Lỗi đăng ký khuôn mặt: " + e.message);
-            }
-        }
-
-        // SỰ KIỆN & GIAO DIỆN
-        function initEventListeners() {
-            document.getElementById("searchInput").oninput = () => { currentPage = 1; renderApp(); };
-            document.getElementById("filterTDP").onchange = () => { currentPage = 1; renderApp(); };
-            document.getElementById("sortOption").onchange = () => { renderApp(); };
-
-            document.getElementById("btnToggleAdvanced").onclick = () => {
-                const panel = document.getElementById("advancedSearchPanel");
-                panel.classList.toggle("show");
-            };
-            document.getElementById("advFilterDanToc").oninput = () => { currentPage = 1; renderApp(); };
-            document.getElementById("advFilterTonGiao").oninput = () => { currentPage = 1; renderApp(); };
-            document.getElementById("btnResetAdvSearch").onclick = () => {
-                document.getElementById("advFilterDanToc").value = "";
-                document.getElementById("advFilterTonGiao").value = "";
-                currentPage = 1;
-                renderApp();
-            };
-
-            document.getElementById("btnAddMain").onclick = () => openFormModal();
-            document.getElementById("btnOpenStatModal").onclick = () => openStatModal();
-
-            document.getElementById("nhanKhauForm").onsubmit = (e) => {
-                e.preventDefault();
-                saveFormData();
-            };
-
-            document.getElementById("galleryInput").onchange = (e) => handleImageSelect(e);
-            document.getElementById("cameraFrontInput").onchange = (e) => handleImageSelect(e);
-            document.getElementById("cameraBackInput").onchange = (e) => handleImageSelect(e);
-
-            document.getElementById("btnOpenLiveCam").onclick = async () => {
-                const container = document.getElementById("cameraLiveContainer");
-                container.style.display = "block";
-                try {
-                    formMediaStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
-                    document.getElementById("cameraVideo").srcObject = formMediaStream;
-                } catch (e) {
-                    alert("Không mở được camera: " + e.message);
-                }
-            };
-
-            document.getElementById("btnCloseCamera").onclick = () => stopFormCamera();
-
-            document.getElementById("btnCaptureNow").onclick = () => {
-                const video = document.getElementById("cameraVideo");
-                const canvas = document.getElementById("cameraCanvas");
-                canvas.width = video.videoWidth || 640;
-                canvas.height = video.videoHeight || 480;
-                const ctx = canvas.getContext("2d");
-                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                const dataUrl = canvas.toDataURL("image/jpeg");
-                document.getElementById("imgPreview").src = dataUrl;
-                document.getElementById("formBase64Image").value = dataUrl;
-                stopFormCamera();
-            };
-
-            document.getElementById("excelFileInput").onchange = (e) => importExcel(e);
-            document.getElementById("btnExportExcel").onclick = () => exportExcel();
-        }
-
-        function stopFormCamera() {
-            if (formMediaStream) {
-                formMediaStream.getTracks().forEach(t => t.stop());
-                formMediaStream = null;
-            }
-            document.getElementById("cameraLiveContainer").style.display = "none";
-        }
-
-        function handleImageSelect(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                document.getElementById("imgPreview").src = event.target.result;
-                document.getElementById("formBase64Image").value = event.target.result;
-            };
-            reader.readAsDataURL(file);
-        }
-
-        // HÀM HỖ TRỢ TÍNH TUỔI CHÍNH XÁC
-        function calculateAge(namSinhStr) {
-            if (!namSinhStr) return null;
-            let year = null;
-            let month = 1;
-            let day = 1;
-
-            const parts = namSinhStr.trim().split(/[\/\-]/);
-            if (parts.length === 3) {
-                day = parseInt(parts[0], 10);
-                month = parseInt(parts[1], 10);
-                year = parseInt(parts[2], 10);
-            } else if (parts.length === 1) {
-                year = parseInt(parts[0], 10);
-            }
-
-            if (!year || isNaN(year)) return null;
-
-            const today = new Date();
-            let age = today.getFullYear() - year;
-            const currentMonth = today.getMonth() + 1;
-            const currentDay = today.getDate();
-
-            if (parts.length === 3) {
-                if (currentMonth < month || (currentMonth === month && currentDay < day)) {
-                    age--;
-                }
-            }
-            return age;
-        }
-
-        // GỘP NHÓM THEO HỘ GIA ĐÌNH
-        function getGroupedHouseholds() {
-            const keyword = document.getElementById("searchInput").value.toLowerCase().trim();
-            const filterTDP = document.getElementById("filterTDP").value;
-            const sortOpt = document.getElementById("sortOption").value;
-            const advDanToc = document.getElementById("advFilterDanToc").value.toLowerCase().trim();
-            const advTonGiao = document.getElementById("advFilterTonGiao").value.toLowerCase().trim();
-
-            const householdsMap = {};
-            
-            nhanKhauData.forEach(item => {
-                const shkKey = (item.shk && item.shk.trim() !== "") ? item.shk.trim() : "KHAC_" + (item.hoTenCH || item.hoTen);
-                
-                if (!householdsMap[shkKey]) {
-                    householdsMap[shkKey] = {
-                        shk: item.shk || "Chưa có SHK",
-                        hoTenCH: item.hoTenCH || "Chưa xác định",
-                        tdp: item.tdp || "Chưa phân loại",
-                        soNha: item.soNha || "",
-                        thuongTru: item.thuongTru || "",
-                        members: []
-                    };
-                }
-                householdsMap[shkKey].members.push(item);
-                if (item.quanHe && item.quanHe.toLowerCase().includes("chủ hộ")) {
-                    householdsMap[shkKey].hoTenCH = item.hoTen;
-                    if (item.tdp) householdsMap[shkKey].tdp = item.tdp;
-                    if (item.thuongTru) householdsMap[shkKey].thuongTru = item.thuongTru;
-                }
-            });
-
-            let householdsArray = Object.values(householdsMap);
-
-            householdsArray = householdsArray.filter(house => {
-                const matchTDP = !filterTDP || house.tdp === filterTDP;
-                const matchKeyword = !keyword || 
-                    house.shk.toLowerCase().includes(keyword) ||
-                    house.hoTenCH.toLowerCase().includes(keyword) ||
-                    house.soNha.toLowerCase().includes(keyword) ||
-                    house.members.some(m => 
-                        (m.hoTen && m.hoTen.toLowerCase().includes(keyword)) ||
-                        (m.canCuoc && m.canCuoc.toLowerCase().includes(keyword)) ||
-                        (m.soDT && m.soDT.toLowerCase().includes(keyword))
-                    );
-
-                const matchDanTocTonGiao = house.members.some(m => {
-                    const matchDT = !advDanToc || (m.danToc && m.danToc.toLowerCase().includes(advDanToc));
-                    const matchTG = !advTonGiao || (m.tonGiao && m.tonGiao.toLowerCase().includes(advTonGiao));
-                    return matchDT && matchTG;
+        const filteredHouses = houses.filter(h => {
+            if (!q) return true;
+            if (currentSearchCriteria === 'all') {
+                return h.members.some(m => Object.values(m).some(val => removeAccents(val).includes(q)));
+            } else if (currentSearchCriteria === 'Căn cước') {
+                return h.members.some(m => {
+                    const cccd = removeAccents(m['Căn cước'] || '');
+                    const cmnd = removeAccents(m['CMND'] || '');
+                    return cccd.includes(q) || cmnd.includes(q);
                 });
+            } else {
+                return h.members.some(m => removeAccents(m[currentSearchCriteria] || '').includes(q));
+            }
+        });
 
-                return matchTDP && matchKeyword && matchDanTocTonGiao;
-            });
+        const totalHouses = filteredHouses.length;
+        const totalPages = Math.ceil(totalHouses / rowsPerPage) || 1;
+        if (currentPage > totalPages) currentPage = totalPages;
+        if (currentPage < 1) currentPage = 1;
 
-            householdsArray.sort((a, b) => {
-                if (sortOpt === 'AZ') return a.hoTenCH.localeCompare(b.hoTenCH, 'vi');
-                if (sortOpt === 'ZA') return b.hoTenCH.localeCompare(a.hoTenCH, 'vi');
-                if (sortOpt === 'COUNT_DESC') return b.members.length - a.members.length;
-                return 0;
-            });
+        const startIdx = (currentPage - 1) * rowsPerPage;
+        const paginatedHouses = filteredHouses.slice(startIdx, startIdx + rowsPerPage);
 
-            return householdsArray;
+        document.getElementById('searchStatsText').innerText = `Tìm thấy ${totalHouses} hộ / ${filteredHouses.reduce((acc, h) => acc + h.members.length, 0)} nhân khẩu.`;
+
+        if (paginatedHouses.length === 0) {
+            container.innerHTML = `
+                <div class="col-span-full py-12 text-center bg-white rounded-xl shadow border">
+                    <i class="fa-solid fa-folder-open text-4xl text-slate-300 mb-3"></i>
+                    <p class="text-slate-500 font-medium">Không tìm thấy hộ khẩu hoặc nhân khẩu phù hợp.</p>
+                </div>
+            `;
+            renderPagination(0, 1);
+            return;
         }
 
-        function renderApp() {
-            updateDropdownFilters();
-            updateStatistics();
+        let html = '';
+        paginatedHouses.forEach(house => {
+            const head = house.head || {};
+            const headName = head['Họ tên'] || head['Họ tên CH'] || 'Chưa rõ';
+            const headDob = formatDateVN(head['Năm sinh']) || '---';
+            const headPhone = head['Số ĐT'] || head['Số điện thoại'] || '';
+            const address = head['Nơi thường trú'] || head['Địa chỉ'] || 'TDP 7 Thành Công';
+            const shk = house.shk;
+            const count = house.members.length;
+            const photo = head['photo'] || '';
 
-            const households = getGroupedHouseholds();
-            const totalPages = Math.ceil(households.length / itemsPerPage) || 1;
-            if (currentPage > totalPages) currentPage = totalPages;
+            let avatarHtml = photo ? `<img src="${photo}" class="w-full h-full object-cover">` : `<i class="fa-solid fa-user-tie text-lg"></i>`;
 
-            const start = (currentPage - 1) * itemsPerPage;
-            const paginatedHouseholds = households.slice(start, start + itemsPerPage);
-
-            const container = document.getElementById("hoGiaDinhContainer");
-            container.innerHTML = "";
-
-            if (paginatedHouseholds.length === 0) {
-                container.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding: 30px; color: var(--text-muted);">Không tìm thấy hộ gia đình phù hợp!</div>`;
-                document.getElementById("pagination").innerHTML = "";
-                return;
-            }
-
-            paginatedHouseholds.forEach(house => {
-                const card = document.createElement("div");
-                card.className = "ho-gia-dinh-card";
-                const memberNames = house.members.map(m => `${m.hoTen} (${m.quanHe})`).join(", ");
-
-                // Tạo key thực tế để truyền vào hàm xóa hộ (phòng trường hợp hộ chưa có số hộ khẩu)
-                const realShkKey = house.shk !== "Chưa có SHK" ? house.shk : "KHAC_" + house.hoTenCH;
-
-                card.innerHTML = `
-                    <div>
-                        <div class="ho-header">
-                            <div class="ho-title">
-                                <h3>Hộ: ${house.hoTenCH}</h3>
-                                <p><i class="fa-solid fa-id-badge"></i> SHK: <b>${house.shk}</b></p>
+            html += `
+                <div class="bg-white rounded-2xl shadow-md hover:shadow-xl transition border border-slate-200 flex flex-col justify-between overflow-hidden">
+                    <div class="bg-blue-900 text-white px-4 py-3 flex justify-between items-center">
+                        <span class="text-xs font-mono font-bold bg-blue-950 px-2.5 py-1 rounded border border-blue-800">
+                            <i class="fa-solid fa-id-card mr-1 text-amber-300"></i> SHK: ${shk}
+                        </span>
+                        <span class="text-xs bg-amber-500 text-slate-900 font-bold px-2 py-0.5 rounded-full shadow">
+                            ${count} Nhân khẩu
+                        </span>
+                    </div>
+                    <div class="p-4 space-y-2.5 text-xs flex-grow">
+                        <div class="flex items-start space-x-3">
+                            <div class="w-12 h-12 bg-slate-200 rounded-full flex items-center justify-center text-slate-600 font-bold overflow-hidden flex-shrink-0 shadow-inner">
+                                ${avatarHtml}
                             </div>
-                            <span class="badge-soluong"><i class="fa-solid fa-users"></i> ${house.members.length} nhân khẩu</span>
+                            <div class="overflow-hidden">
+                                <h3 class="font-bold text-slate-800 text-sm uppercase truncate">${headName}</h3>
+                                <p class="text-slate-500"><span class="font-semibold">Ngày sinh:</span> ${headDob}</p>
+                            </div>
                         </div>
-                        <div class="ho-body">
-                            <p><i class="fa-solid fa-building-flag" style="color:var(--primary-color);"></i> <b>TDP:</b> ${house.tdp} | <b>Số nhà:</b> ${house.soNha || 'N/A'}</p>
-                            <p><i class="fa-solid fa-location-dot" style="color:var(--primary-color);"></i> <b>Địa chỉ:</b> ${house.thuongTru || 'N/A'}</p>
-                            <div class="member-preview-list">
-                                <b>Thành viên:</b> ${memberNames}
+                        <div class="border-t pt-2 space-y-1.5">
+                            <div class="flex items-center text-slate-600">
+                                <i class="fa-solid fa-phone w-5 text-blue-800"></i>
+                                ${headPhone ? `<a href="tel:${headPhone}" class="text-blue-900 font-bold hover:underline">📞 ${headPhone}</a>` : '<span class="text-slate-400">Chưa có SĐT</span>'}
+                            </div>
+                            <div class="flex items-start text-slate-600">
+                                <i class="fa-solid fa-location-dot w-5 text-blue-800 mt-0.5"></i>
+                                <span class="truncate" title="${address}">${address}</span>
                             </div>
                         </div>
                     </div>
-                    <div class="card-actions">
-                        <button class="btn btn-sm btn-primary" onclick="openHouseholdDetail('${realShkKey}')"><i class="fa-solid fa-eye"></i> Xem</button>
-                        <button class="btn btn-sm btn-accent" onclick="openFormModalForHousehold('${house.shk}')"><i class="fa-solid fa-user-plus"></i> Thêm</button>
-                        <button class="btn btn-sm btn-danger" onclick="deleteHousehold('${realShkKey}')"><i class="fa-solid fa-trash"></i> Xóa Hộ</button>
-                    </div>
-                `;
-                container.appendChild(card);
-            });
-
-            renderPagination(totalPages);
-        }
-
-        function renderPagination(totalPages) {
-            const container = document.getElementById("pagination");
-            container.innerHTML = "";
-            for (let i = 1; i <= totalPages; i++) {
-                const btn = document.createElement("button");
-                btn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
-                btn.innerText = i;
-                btn.onclick = () => { currentPage = i; renderApp(); };
-                container.appendChild(btn);
-            }
-        }
-
-        function updateDropdownFilters() {
-            const tdpSet = new Set();
-            nhanKhauData.forEach(i => { if (i.tdp) tdpSet.add(i.tdp); });
-
-            const tdpSelect = document.getElementById("filterTDP");
-            const currentTDP = tdpSelect.value;
-            tdpSelect.innerHTML = '<option value="">-- Tất cả TDP --</option>';
-            Array.from(tdpSet).sort().forEach(t => {
-                tdpSelect.innerHTML += `<option value="${t}" ${t === currentTDP ? 'selected' : ''}>${t}</option>`;
-            });
-        }
-
-        function updateStatistics() {
-            const householdsMap = {};
-            nhanKhauData.forEach(i => {
-                const shkKey = (i.shk && i.shk.trim() !== "") ? i.shk.trim() : "KHAC_" + i.hoTen;
-                householdsMap[shkKey] = true;
-            });
-
-            document.getElementById("statTotalHoGiaDinh").innerText = Object.keys(householdsMap).length;
-            document.getElementById("statTotalNhanKhau").innerText = nhanKhauData.length;
-            
-            const namCount = nhanKhauData.filter(i => i.gioiTinh && i.gioiTinh.toLowerCase() === "nam").length;
-            document.getElementById("statTotalNam").innerText = namCount;
-            const nuCount = nhanKhauData.filter(i => i.gioiTinh && i.gioiTinh.toLowerCase() === "nữ").length;
-            document.getElementById("statTotalNu").innerText = nuCount;
-            
-            const tdpSet = new Set(nhanKhauData.map(i => i.tdp).filter(Boolean));
-            document.getElementById("statTotalTDP").innerText = tdpSet.size;
-        }
-
-        // XEM CHI TIẾT HỘ GIA ĐÌNH
-        function openHouseholdDetail(shkKey) {
-            const members = nhanKhauData.filter(x => {
-                const itemShkKey = (x.shk && x.shk.trim() !== "") ? x.shk.trim() : "KHAC_" + (x.hoTenCH || x.hoTen);
-                return itemShkKey === shkKey;
-            });
-            if (members.length === 0) return;
-
-            const houseInfo = members[0];
-
-            let html = `
-                <div style="margin-bottom: 15px; background: #f8f9fa; padding: 15px; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
-                    <div>
-                        <h3><i class="fa-solid fa-house"></i> Sổ hộ khẩu: <b>${houseInfo.shk || 'Chưa có'}</b></h3>
-                        <p style="margin-top: 5px;"><b>Chủ hộ:</b> ${houseInfo.hoTenCH} | <b>Tổ dân phố:</b> ${houseInfo.tdp} | <b>Số nhà:</b> ${houseInfo.soNha || 'N/A'}</p>
-                        <p style="margin-top: 3px;"><b>Nơi thường trú:</b> ${houseInfo.thuongTru || 'N/A'}</p>
-                    </div>
-                    <div>
-                        <button class="btn btn-sm btn-danger" onclick="deleteHousehold('${shkKey}')"><i class="fa-solid fa-trash"></i> Xóa Cả Hộ Này</button>
+                    <div class="bg-slate-50 px-4 py-3 border-t flex justify-between items-center gap-2">
+                        <button onclick="openHouseDetail('${shk}')" class="flex-1 bg-blue-900 hover:bg-blue-800 text-white py-2 rounded-lg font-semibold text-xs shadow flex items-center justify-center transition">
+                            <i class="fa-solid fa-eye mr-1.5"></i> Chi tiết
+                        </button>
+                        <button onclick="openEditHouse('${shk}')" class="px-3 py-2 bg-amber-500 hover:bg-amber-600 text-slate-900 rounded-lg font-semibold text-xs shadow transition" title="Sửa">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </button>
+                        <button onclick="deleteHouse('${shk}')" class="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg font-semibold text-xs shadow transition" title="Xóa">
+                            <i class="fa-solid fa-trash"></i>
+                        </button>
                     </div>
                 </div>
-                <h4 style="margin-bottom: 10px;"><i class="fa-solid fa-users"></i> Danh sách thành viên trong hộ (${members.length})</h4>
-                <div class="table-responsive">
-                    <table class="custom-table">
-                        <thead>
-                            <tr>
-                                <th>Ảnh</th>
-                                <th>Họ và Tên</th>
-                                <th>Quan hệ</th>
-                                <th>Ngày sinh</th>
-                                <th>Giới tính</th>
-                                <th>CCCD</th>
-                                <th>SĐT</th>
-                                <th>Thao tác</th>
-                            </tr>
-                        </thead>
-                        <tbody>
             `;
+        });
+        container.innerHTML = html;
+        renderPagination(totalPages, currentPage);
+    }
 
-            members.forEach(m => {
-                const realIndex = nhanKhauData.findIndex(x => x === m);
-                const mAvt = m.avatar || `data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 24 24'><path fill='%231976D2' d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z'/></svg>`;
-                html += `
-                    <tr>
-                        <td><img src="${mAvt}" class="table-avatar" onclick="openLightbox('${mAvt}')"></td>
-                        <td><b>${m.hoTen}</b></td>
-                        <td>${m.quanHe}</td>
-                        <td>${m.namSinh || ''}</td>
-                        <td>${m.gioiTinh}</td>
-                        <td>${m.canCuoc || ''}</td>
-                        <td>${m.soDT ? `<a href="tel:${m.soDT}" class="btn-call"><i class="fa-solid fa-phone"></i> ${m.soDT}</a>` : ''}</td>
-                        <td>
-                            <button class="btn btn-sm btn-primary" onclick="openFormModal(${realIndex})" title="Sửa"><i class="fa-solid fa-pen"></i></button>
-                            <button class="btn btn-sm btn-danger" onclick="deleteItem(${realIndex})" title="Xóa"><i class="fa-solid fa-trash"></i></button>
-                        </td>
-                    </tr>
-                `;
+    function renderPagination(totalPages, current) {
+        const container = document.getElementById('paginationContainer');
+        if (totalPages <= 1) { container.innerHTML = ''; return; }
+        let html = `<button onclick="changePage(${current - 1})" ${current === 1 ? 'disabled class="opacity-40 cursor-not-allowed"' : ''} class="px-3 py-1.5 bg-white border rounded-lg text-xs font-semibold shadow hover:bg-slate-100">Trước</button>`;
+        for (let i = 1; i <= totalPages; i++) {
+            if (i === 1 || i === totalPages || (i >= current - 1 && i <= current + 1)) {
+                html += `<button onclick="changePage(${i})" class="px-3 py-1.5 border rounded-lg text-xs font-semibold shadow ${i === current ? 'bg-blue-900 text-white border-blue-900' : 'bg-white hover:bg-slate-100'}">${i}</button>`;
+            } else if (i === current - 2 || i === current + 2) {
+                html += `<span class="px-2 text-slate-400">...</span>`;
+            }
+        }
+        html += `<button onclick="changePage(${current + 1})" ${current === totalPages ? 'disabled class="opacity-40 cursor-not-allowed"' : ''} class="px-3 py-1.5 bg-white border rounded-lg text-xs font-semibold shadow hover:bg-slate-100">Sau</button>`;
+        container.innerHTML = html;
+    }
+
+    function changePage(p) {
+        currentPage = p;
+        renderHouseList();
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function handleSearchInput() {
+        currentSearchQuery = document.getElementById('searchInput').value;
+        currentPage = 1;
+        const clearBtn = document.getElementById('clearSearchBtn');
+        if (currentSearchQuery) clearBtn.classList.remove('hidden');
+        else clearBtn.classList.add('hidden');
+        renderHouseList();
+    }
+
+    function clearSearch() {
+        document.getElementById('searchInput').value = "";
+        currentSearchQuery = "";
+        document.getElementById('clearSearchBtn').classList.add('hidden');
+        renderHouseList();
+    }
+
+    function openHouseDetail(shk) {
+        const houses = getHouseholds();
+        const house = houses.find(h => h.shk === shk);
+        if (!house) return;
+        currentHouseForDetail = house;
+
+        const head = house.head || {};
+        const summaryDiv = document.getElementById('houseSummaryInfo');
+        summaryDiv.innerHTML = `
+            <div><span class="font-bold text-blue-900">SHK:</span> ${house.shk}</div>
+            <div><span class="font-bold text-blue-900">Chủ hộ:</span> ${head['Họ tên'] || head['Họ tên CH'] || '---'}</div>
+            <div><span class="font-bold text-blue-900">Số khẩu:</span> ${house.members.length} người</div>
+            <div><span class="font-bold text-blue-900">SĐT:</span> ${head['Số ĐT'] || '---'}</div>
+            <div class="col-span-full"><span class="font-bold text-blue-900">Địa chỉ:</span> ${head['Nơi thường trú'] || '---'}</div>
+        `;
+
+        const thead = document.querySelector('#memberTable thead');
+        let headerHtml = `<tr><th class="p-2 border">STT</th><th class="p-2 border text-center">Thao tác</th><th class="p-2 border text-center">Ảnh</th>`;
+        excelColumns.forEach(col => { headerHtml += `<th class="p-2 border whitespace-nowrap">${col}</th>`; });
+        headerHtml += `</tr>`;
+        thead.innerHTML = headerHtml;
+
+        const tbody = document.querySelector('#memberTable tbody');
+        let rowsHtml = '';
+        house.members.forEach((m, idx) => {
+            const photo = m['photo'] || '';
+            const photoHtml = photo ? `<img src="${photo}" class="w-10 h-10 object-cover rounded mx-auto shadow">` : `<span class="text-slate-400 text-[10px]">Không có</span>`;
+
+            rowsHtml += `<tr class="hover:bg-slate-50">`;
+            rowsHtml += `<td class="p-2 border font-medium text-center">${idx + 1}</td>`;
+            rowsHtml += `
+                <td class="p-2 border text-center whitespace-nowrap">
+                    <button onclick="openEditMember(${m._originalIndex})" class="px-2 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded text-xs font-semibold mr-1" title="Sửa">
+                        <i class="fa-solid fa-pen"></i>
+                    </button>
+                    <button onclick="deleteMember(${m._originalIndex})" class="px-2 py-1 bg-red-600 hover:bg-red-700 text-white rounded text-xs font-semibold" title="Xóa">
+                        <i class="fa-solid fa-trash"></i>
+                    </button>
+                </td>
+            `;
+            rowsHtml += `<td class="p-2 border text-center whitespace-nowrap">${photoHtml}</td>`;
+
+            excelColumns.forEach(col => {
+                let val = m[col] !== undefined && m[col] !== null ? m[col] : '';
+                if (col.includes('Ngày') || col === 'Năm sinh') {
+                    val = formatDateVN(val);
+                }
+                rowsHtml += `<td class="p-2 border whitespace-nowrap max-w-xs truncate" title="${m[col] || ''}">${val}</td>`;
             });
+            rowsHtml += `</tr>`;
+        });
+        tbody.innerHTML = rowsHtml;
+        openModal('houseDetailModal');
+    }
 
-            html += `</tbody></table></div>`;
+    function openAddHouseModal() {
+        editingHouseSHK = null;
+        document.getElementById('houseFormTitle').innerText = "Thêm Mới Hộ Khẩu & Chủ Hộ";
+        buildDynamicForm('houseFormFields', {});
+        setPhotoPreview('', 'housePhoto');
+        openModal('houseFormModal');
+    }
 
-            document.getElementById("detailBody").innerHTML = html;
-            document.getElementById("modalDetail").style.display = "block";
+    function openEditHouse(shk) {
+        editingHouseSHK = shk;
+        const houses = getHouseholds();
+        const house = houses.find(h => h.shk === shk);
+        if (!house || !house.head) return;
+        document.getElementById('houseFormTitle').innerText = `Sửa Hộ Khẩu (SHK: ${shk})`;
+        let headData = {...house.head};
+        if (headData['Năm sinh']) headData['Năm sinh'] = formatDateVN(headData['Năm sinh']);
+        if (headData['Ngày chuyển đến']) headData['Ngày chuyển đến'] = formatDateVN(headData['Ngày chuyển đến']);
+        if (headData['Ngày chuyển đi']) headData['Ngày chuyển đi'] = formatDateVN(headData['Ngày chuyển đi']);
+        buildDynamicForm('houseFormFields', headData);
+        setPhotoPreview(house.head['photo'] || '', 'housePhoto');
+        openModal('houseFormModal');
+    }
+
+    function buildDynamicForm(containerId, data) {
+        const container = document.getElementById(containerId);
+        let html = '';
+        excelColumns.forEach(col => {
+            const val = data[col] !== undefined && data[col] !== null ? data[col] : '';
+            let isRequired = (col === 'SHK' || col === 'Họ tên' || col === 'Họ tên CH') ? 'required' : '';
+            if (col === 'QH với CH' && !editingHouseSHK && containerId === 'houseFormFields') {
+                html += `
+                    <div>
+                        <label class="block font-semibold uppercase text-slate-600 mb-1">${col}</label>
+                        <input type="text" name="${col}" value="Chủ hộ" readonly class="w-full px-3 py-2 border rounded-lg bg-slate-100 font-bold text-blue-900">
+                    </div>
+                `;
+            } else {
+                html += `
+                    <div>
+                        <label class="block font-semibold uppercase text-slate-600 mb-1">${col}</label>
+                        <input type="text" name="${col}" value="${val}" ${isRequired} class="w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-900 focus:outline-none" placeholder="${col.includes('Ngày') || col === 'Năm sinh' ? 'DD/MM/YYYY' : ''}">
+                    </div>
+                `;
+            }
+        });
+        container.innerHTML = html;
+    }
+
+    function handleSaveHouse(e) {
+        e.preventDefault();
+        const form = document.getElementById('houseForm');
+        const formData = {};
+        excelColumns.forEach(col => {
+            const input = form.querySelector(`[name="${col}"]`);
+            if (input) formData[col] = input.value.trim();
+        });
+
+        formData['QH với CH'] = 'Chủ hộ';
+        formData['Họ tên CH'] = formData['Họ tên'];
+        formData['photo'] = currentPhotoBase64;
+        const shk = formData['SHK'];
+        if (!shk) { alert("Vui lòng nhập Số Hộ Khẩu (SHK)!"); return; }
+
+        if (editingHouseSHK) {
+            populationData.forEach(p => {
+                if (p['SHK'] === editingHouseSHK) {
+                    p['Họ tên CH'] = formData['Họ tên'];
+                    if (p['QH với CH'] === 'Chủ hộ') Object.assign(p, formData);
+                }
+            });
+        } else {
+            if (populationData.some(p => p['SHK'] === shk)) { alert("SHK này đã tồn tại!"); return; }
+            populationData.push(formData);
         }
 
-        // HÀM XÓA TOÀN BỘ HỘ GIA ĐÌNH
-        function deleteHousehold(shkKey) {
-            const confirmMsg = shkKey.startsWith("KHAC_") 
-                ? "Bạn có chắc chắn muốn xóa hộ gia đình này cùng toàn bộ thành viên?" 
-                : `Bạn có chắc chắn muốn xóa toàn bộ Sổ hộ khẩu [${shkKey}] và tất cả các thành viên bên trong?`;
+        saveDataToStorage();
+        closeModal('houseFormModal');
+        renderHouseList();
+        alert("Lưu hộ khẩu thành công!");
+    }
 
-            if (confirm(confirmMsg)) {
-                nhanKhauData = nhanKhauData.filter(item => {
-                    const itemShkKey = (item.shk && item.shk.trim() !== "") ? item.shk.trim() : "KHAC_" + (item.hoTenCH || item.hoTen);
-                    return itemShkKey !== shkKey;
+    function openAddMemberModal() {
+        if (!currentHouseForDetail) return;
+        editingMemberIndex = null;
+        document.getElementById('memberFormTitle').innerText = `Thêm Nhân Khẩu vào SHK: ${currentHouseForDetail.shk}`;
+        const defaultData = { 'SHK': currentHouseForDetail.shk, 'Họ tên CH': currentHouseForDetail.head['Họ tên'] || '' };
+        buildDynamicForm('memberFormFields', defaultData);
+        setPhotoPreview('', 'memberPhoto');
+        openModal('memberFormModal');
+    }
+
+    function openEditMember(originalIdx) {
+        editingMemberIndex = originalIdx;
+        const person = {...populationData[originalIdx]};
+        if (person['Năm sinh']) person['Năm sinh'] = formatDateVN(person['Năm sinh']);
+        if (person['Ngày chuyển đến']) person['Ngày chuyển đến'] = formatDateVN(person['Ngày chuyển đến']);
+        if (person['Ngày chuyển đi']) person['Ngày chuyển đi'] = formatDateVN(person['Ngày chuyển đi']);
+        document.getElementById('memberFormTitle').innerText = `Sửa Nhân Khẩu: ${person['Họ tên'] || ''}`;
+        buildDynamicForm('memberFormFields', person);
+        setPhotoPreview(person['photo'] || '', 'memberPhoto');
+        openModal('memberFormModal');
+    }
+
+    function handleSaveMember(e) {
+        e.preventDefault();
+        const form = document.getElementById('memberForm');
+        const formData = {};
+        excelColumns.forEach(col => {
+            const input = form.querySelector(`[name="${col}"]`);
+            if (input) formData[col] = input.value.trim();
+        });
+
+        formData['photo'] = currentPhotoBase64;
+
+        if (currentHouseForDetail && editingMemberIndex === null) {
+            formData['SHK'] = currentHouseForDetail.shk;
+            formData['Họ tên CH'] = currentHouseForDetail.head['Họ tên'] || '';
+            populationData.push(formData);
+        } else if (editingMemberIndex !== null) {
+            populationData[editingMemberIndex] = formData;
+        }
+
+        saveDataToStorage();
+        closeModal('memberFormModal');
+        renderHouseList();
+        if (currentHouseForDetail) openHouseDetail(currentHouseForDetail.shk);
+        alert("Lưu nhân khẩu thành công!");
+    }
+
+    function deleteHouse(shk) {
+        if (confirm("Bạn có chắc chắn muốn xóa hộ này và tất cả nhân khẩu không?")) {
+            populationData = populationData.filter(p => p['SHK'] !== shk);
+            saveDataToStorage();
+            renderHouseList();
+            alert("Đã xóa hộ thành công!");
+        }
+    }
+
+    function deleteMember(originalIdx) {
+        const person = populationData[originalIdx];
+        if (!confirm(`Bạn có chắc muốn xóa nhân khẩu ${person['Họ tên']} không?`)) return;
+
+        const shk = person['SHK'];
+        populationData.splice(originalIdx, 1);
+        saveDataToStorage();
+        renderHouseList();
+        if (currentHouseForDetail) openHouseDetail(shk);
+        alert("Đã xóa nhân khẩu thành công!");
+    }
+
+    function handleExcelFileSelect(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            try {
+                const data = new Uint8Array(evt.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+                const json = XLSX.utils.sheet_to_json(worksheet, { defval: "" });
+
+                if (!json || json.length === 0) { alert("File Excel không có dữ liệu!"); return; }
+
+                pendingExcelData = json.map(row => {
+                    if (row['Năm sinh']) row['Năm sinh'] = formatDateVN(row['Năm sinh']);
+                    if (row['Ngày chuyển đến']) row['Ngày chuyển đến'] = formatDateVN(row['Ngày chuyển đến']);
+                    if (row['Ngày chuyển đi']) row['Ngày chuyển đi'] = formatDateVN(row['Ngày chuyển đi']);
+                    return row;
                 });
 
-                saveToLocalStorage();
-                renderApp();
-                closeModal('modalDetail');
-                showToast("Đã xóa thành công hộ gia đình!");
-            }
-        }
-
-        function openFormModal(index = -1) {
-            document.getElementById("editIndex").value = index;
-            const form = document.getElementById("nhanKhauForm");
-            form.reset();
-            stopFormCamera();
-
-            const defaultImg = "data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='100' height='100' viewBox='0 0 24 24'><path fill='%23ccc' d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z'/></svg>";
-            document.getElementById("imgPreview").src = defaultImg;
-            document.getElementById("formBase64Image").value = "";
-
-            if (index >= 0) {
-                document.getElementById("formTitle").innerHTML = '<i class="fa-solid fa-user-pen"></i> Chỉnh Sửa Nhân Khẩu';
-                const item = nhanKhauData[index];
-                document.getElementById("formHoTen").value = item.hoTen || "";
-                document.getElementById("formSHK").value = item.shk || "";
-                document.getElementById("formNamSinh").value = item.namSinh || "";
-                document.getElementById("formGioiTinh").value = item.gioiTinh || "Nam";
-                document.getElementById("formQH").value = item.quanHe || "";
-                document.getElementById("formHoTenCH").value = item.hoTenCH || "";
-                document.getElementById("formCanCuoc").value = item.canCuoc || "";
-                document.getElementById("formSoDT").value = item.soDT || "";
-                document.getElementById("formDanToc").value = item.danToc || "";
-                document.getElementById("formTonGiao").value = item.tonGiao || "";
-                document.getElementById("formTDP").value = item.tdp || "";
-                document.getElementById("formQueQuan").value = item.queQuan || "";
-                document.getElementById("formSoNha").value = item.soNha || "";
-                document.getElementById("formThuongTru").value = item.thuongTru || "";
-                document.getElementById("formCuTru").value = item.cuTru || "";
-                document.getElementById("formTenCha").value = item.tenCha || "";
-                document.getElementById("formTenMe").value = item.tenMe || "";
-                document.getElementById("formGhiChu").value = item.ghiChu || "";
-                if (item.avatar) {
-                    document.getElementById("imgPreview").src = item.avatar;
-                    document.getElementById("formBase64Image").value = item.avatar;
+                if (populationData.length > 0) {
+                    document.getElementById('excelConflictModal').classList.remove('hidden');
+                } else {
+                    processExcelImportAction('overwrite');
                 }
-            } else {
-                document.getElementById("formTitle").innerHTML = '<i class="fa-solid fa-user-plus"></i> Thêm Nhân Khẩu Mới';
-                document.getElementById("formTDP").value = document.getElementById("filterTDP").value || "TDP 7";
-            }
-            document.getElementById("modalForm").style.display = "block";
+            } catch (err) { alert("Lỗi đọc file Excel: " + err.message); }
+        };
+        reader.readAsArrayBuffer(file);
+        e.target.value = "";
+    }
+
+    function processExcelImportAction(action) {
+        closeModal('excelConflictModal');
+        if (action === 'overwrite') {
+            populationData = pendingExcelData;
+        } else if (action === 'append') {
+            populationData = populationData.concat(pendingExcelData);
         }
+        saveDataToStorage();
+        renderHouseList();
+        alert("Nhập file Excel thành công!");
+    }
 
-        function openFormModalForHousehold(shk) {
-            openFormModal(-1);
-            document.getElementById("formSHK").value = shk;
-            const existing = nhanKhauData.find(x => x.shk === shk);
-            if (existing) {
-                document.getElementById("formHoTenCH").value = existing.hoTenCH || "";
-                document.getElementById("formTDP").value = existing.tdp || "";
-                document.getElementById("formThuongTru").value = existing.thuongTru || "";
-                document.getElementById("formSoNha").value = existing.soNha || "";
-            }
+    function exportExcelFile() {
+        if (populationData.length === 0) { alert("Không có dữ liệu để xuất!"); return; }
+        const exportData = populationData.map(item => {
+            const copy = {...item};
+            delete copy.photo; 
+            return copy;
+        });
+        const worksheet = XLSX.utils.json_to_sheet(exportData, { header: excelColumns });
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "DS");
+        XLSX.writeFile(workbook, "Quan_ly_nhan_ho_khau.xlsx");
+    }
+
+    function confirmClearAllData() {
+        if (confirm("XÓA TOÀN BỘ dữ liệu? Hành động này không thể khôi phục!")) {
+            populationData = [];
+            saveDataToStorage();
+            renderHouseList();
+            alert("Đã xóa toàn bộ dữ liệu!");
         }
+    }
 
-        function saveFormData() {
-            const index = parseInt(document.getElementById("editIndex").value);
-            const newItem = {
-                stt: index >= 0 ? nhanKhauData[index].stt : nhanKhauData.length + 1,
-                hoTen: document.getElementById("formHoTen").value.trim(),
-                shk: document.getElementById("formSHK").value.trim(),
-                namSinh: document.getElementById("formNamSinh").value.trim(),
-                gioiTinh: document.getElementById("formGioiTinh").value,
-                quanHe: document.getElementById("formQH").value.trim(),
-                hoTenCH: document.getElementById("formHoTenCH").value.trim(),
-                canCuoc: document.getElementById("formCanCuoc").value.trim(),
-                soDT: document.getElementById("formSoDT").value.trim(),
-                danToc: document.getElementById("formDanToc").value.trim() || "Kinh",
-                tonGiao: document.getElementById("formTonGiao").value.trim() || "Không",
-                tdp: document.getElementById("formTDP").value.trim(),
-                queQuan: document.getElementById("formQueQuan").value.trim(),
-                soNha: document.getElementById("formSoNha").value.trim(),
-                thuongTru: document.getElementById("formThuongTru").value.trim(),
-                cuTru: document.getElementById("formCuTru").value.trim(),
-                tenCha: document.getElementById("formTenCha").value.trim(),
-                tenMe: document.getElementById("formTenMe").value.trim(),
-                ghiChu: document.getElementById("formGhiChu").value.trim(),
-                avatar: document.getElementById("formBase64Image").value
-            };
+    function openStatsModal() {
+        const activePopulation = populationData.filter(p => !p['Ngày chuyển đi'] || p['Ngày chuyển đi'].trim() === "");
+        const houses = getHouseholds().filter(h => {
+            return h.members.some(m => !m['Ngày chuyển đi'] || m['Ngày chuyển đi'].trim() === "");
+        });
 
-            if (index >= 0) {
-                nhanKhauData[index] = newItem;
-                showToast("Cập nhật thành công!");
-            } else {
-                nhanKhauData.push(newItem);
-                showToast("Thêm mới thành công!");
+        const totalHouses = houses.length;
+        const totalMembers = activePopulation.length;
+        let maleCount = 0, femaleCount = 0, over14Count = 0;
+        
+        let ageGroups = { 'Dưới 6 tuổi': 0, 'Từ 6 - 14 tuổi': 0, 'Từ 15 - 60 tuổi': 0, 'Trên 60 tuổi': 0 };
+        const ethnicMap = {}, religionMap = {}, educationMap = {}, maritalMap = {};
+        const housingMap = {}, objectTypeMap = {}, detailObjectMap = {}, noteMap = {};
+
+        const countedHouseSHK = new Set();
+        houses.forEach(h => {
+            const head = h.head || {};
+            const housingStatus = head['Tình trạng nhà ở'] || 'Chưa phân loại';
+            if (!countedHouseSHK.has(h.shk)) {
+                housingMap[housingStatus] = (housingMap[housingStatus] || 0) + 1;
+                countedHouseSHK.add(h.shk);
             }
+        });
 
-            saveToLocalStorage();
-            closeModal('modalForm');
-            renderApp();
+        const currentYear = new Date().getFullYear();
+
+        activePopulation.forEach(p => {
+            const gender = removeAccents(p['Giới tính'] || '');
+            if (gender.includes('nam') && !gender.includes('nu')) maleCount++;
+            else if (gender.includes('nu') || gender.includes('nữ')) femaleCount++;
+
+            const dob = p['Năm sinh'] || '';
+            const parts = dob.split('/');
+            let birthYear = parts.length === 3 ? parseInt(parts[2]) : parseInt(dob);
             
-            const detailModal = document.getElementById("modalDetail");
-            if (detailModal.style.display === "block" && newItem.shk) {
-                const updatedShkKey = newItem.shk ? newItem.shk.trim() : "KHAC_" + newItem.hoTenCH;
-                openHouseholdDetail(updatedShkKey);
+            if (!isNaN(birthYear)) {
+                const age = currentYear - birthYear;
+                if (age >= 14) over14Count++;
+
+                if (age < 6) ageGroups['Dưới 6 tuổi']++;
+                else if (age <= 14) ageGroups['Từ 6 - 14 tuổi']++;
+                else if (age <= 60) ageGroups['Từ 15 - 60 tuổi']++;
+                else ageGroups['Trên 60 tuổi']++;
             }
-        }
 
-        function deleteItem(index) {
-            if (confirm(`Bạn có chắc chắn muốn xóa nhân khẩu: ${nhanKhauData[index].hoTen}?`)) {
-                const item = nhanKhauData[index];
-                const shkKey = (item.shk && item.shk.trim() !== "") ? item.shk.trim() : "KHAC_" + (item.hoTenCH || item.hoTen);
-                
-                nhanKhauData.splice(index, 1);
-                saveToLocalStorage();
-                renderApp();
-                showToast("Đã xóa thành công!");
+            const ethnic = p['Dân tộc'] || 'Kinh/Chưa rõ';
+            ethnicMap[ethnic] = (ethnicMap[ethnic] || 0) + 1;
 
-                const detailModal = document.getElementById("modalDetail");
-                if (detailModal.style.display === "block") {
-                    const remainingMembers = nhanKhauData.filter(x => {
-                        const xKey = (x.shk && x.shk.trim() !== "") ? x.shk.trim() : "KHAC_" + (x.hoTenCH || x.hoTen);
-                        return xKey === shkKey;
-                    });
-                    if (remainingMembers.length > 0) {
-                        openHouseholdDetail(shkKey);
-                    } else {
-                        closeModal('modalDetail');
-                    }
-                }
+            const religion = p['Tôn giáo'] || 'Không/Chưa rõ';
+            religionMap[religion] = (religionMap[religion] || 0) + 1;
+
+            const education = p['Học vấn'] || 'Chưa cập nhật';
+            educationMap[education] = (educationMap[education] || 0) + 1;
+
+            const marital = p['Tình trạng hôn nhân'] || 'Chưa cập nhật';
+            maritalMap[marital] = (maritalMap[marital] || 0) + 1;
+
+            const objType = p['Hệ loại đối tượng'] || 'Bình thường';
+            objectTypeMap[objType] = (objectTypeMap[objType] || 0) + 1;
+
+            const detailObj = p['Chi tiết đối tượng'] || 'Không';
+            if (detailObj && detailObj !== 'Không') {
+                detailObjectMap[detailObj] = (detailObjectMap[detailObj] || 0) + 1;
             }
-        }
 
-        // FORM THỐNG KÊ CHI TIẾT
-        function openStatModal() {
-            const householdsMap = {};
-            nhanKhauData.forEach(i => {
-                const shkKey = (i.shk && i.shk.trim() !== "") ? i.shk.trim() : "KHAC_" + i.hoTen;
-                householdsMap[shkKey] = true;
-            });
+            const note = p['Ghi chú'] || '';
+            if (note.trim() !== '') {
+                noteMap[note] = (noteMap[note] || 0) + 1;
+            }
+        });
 
-            const totalHo = Object.keys(householdsMap).length;
-            const totalNhanKhau = nhanKhauData.length;
-            const namCount = nhanKhauData.filter(i => i.gioiTinh === "Nam").length;
-            const nuCount = nhanKhauData.filter(i => i.gioiTinh === "Nữ").length;
+        let buildListHtml = (mapObj) => {
+            let res = '';
+            for (let [k, v] of Object.entries(mapObj)) {
+                res += `<li class="flex justify-between border-b py-1"><span>${k}</span><span class="font-bold">${v}</span></li>`;
+            }
+            return res || '<li class="text-slate-400 py-1">Không có dữ liệu</li>';
+        };
 
-            const tdpMap = {};
-            const danTocMap = {};
-            const tonGiaoMap = {};
-
-            let countTuoi14TroLen = 0;
-            let count17to18_Nam = 0, count17to18_Nu = 0;
-            let countNVQS18to25_Nam = 0, countNVQS18to25_Nu = 0;
-            let count25to27_Nam = 0, count25to27_Nu = 0;
-
-            nhanKhauData.forEach(i => {
-                const t = i.tdp || "Chưa rõ TDP";
-                const shkKey = (i.shk && i.shk.trim() !== "") ? i.shk.trim() : "KHAC_" + i.hoTen;
-                if (!tdpMap[t]) tdpMap[t] = { totalNhanKhau: 0, hoSet: new Set(), nam: 0, nu: 0 };
-                tdpMap[t].totalNhanKhau++;
-                tdpMap[t].hoSet.add(shkKey);
-                if (i.gioiTinh === "Nam") tdpMap[t].nam++;
-                if (i.gioiTinh === "Nữ") tdpMap[t].nu++;
-
-                const dt = (i.danToc && i.danToc.trim() !== "") ? i.danToc.trim() : "Chưa xác định";
-                danTocMap[dt] = (danTocMap[dt] || 0) + 1;
-
-                const tg = (i.tonGiao && i.tonGiao.trim() !== "") ? i.tonGiao.trim() : "Không";
-                tonGiaoMap[tg] = (tonGiaoMap[tg] || 0) + 1;
-
-                const age = calculateAge(i.namSinh);
-                const g = i.gioiTinh ? i.gioiTinh.trim() : "";
-
-                if (age !== null) {
-                    if (age >= 14) countTuoi14TroLen++;
-                    if (age >= 17 && age < 18) {
-                        if (g === "Nam") count17to18_Nam++;
-                        else if (g === "Nữ") count17to18_Nu++;
-                    }
-                    if (age >= 18 && age < 25) {
-                        if (g === "Nam") countNVQS18to25_Nam++;
-                        else if (g === "Nữ") countNVQS18to25_Nu++;
-                    }
-                    if (age >= 25 && age < 27) {
-                        if (g === "Nam") count25to27_Nam++;
-                        else if (g === "Nữ") count25to27_Nu++;
-                    }
-                }
-            });
-
-            let html = `
-                <div style="margin-bottom: 20px; background: #f8f9fa; padding: 12px; border-radius: 8px;">
-                    <p style="margin-bottom: 5px;"><b>Tổng số hộ gia đình:</b> ${totalHo} | <b>Tổng nhân khẩu:</b> ${totalNhanKhau} | <b>Nam:</b> ${namCount} | <b>Nữ:</b> ${nuCount}</p>
+        document.getElementById('statsContent').innerHTML = `
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 text-center">
+                <div class="bg-blue-50 p-3 rounded-xl border border-blue-200">
+                    <div class="text-2xl font-bold text-blue-900">${totalHouses}</div>
+                    <div class="text-xs text-slate-600 uppercase font-semibold mt-1">Tổng số hộ (Đang ở)</div>
                 </div>
-
-                <h3 style="margin-bottom: 8px; font-size: 1.1rem; color: var(--primary-color);"><i class="fa-solid fa-building-flag"></i> 1. Thống kê theo Tổ Dân Phố</h3>
-                <div class="table-responsive" style="margin-bottom: 20px;">
-                    <table class="custom-table">
-                        <thead>
-                            <tr>
-                                <th>Tổ Dân Phố</th>
-                                <th>Số Hộ Gia Đình</th>
-                                <th>Tổng Nhân Khẩu</th>
-                                <th>Nam</th>
-                                <th>Nữ</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-            `;
-            for (let tdp in tdpMap) {
-                html += `
-                    <tr>
-                        <td><b>${tdp}</b></td>
-                        <td>${tdpMap[tdp].hoSet.size}</td>
-                        <td>${tdpMap[tdp].totalNhanKhau}</td>
-                        <td>${tdpMap[tdp].nam}</td>
-                        <td>${tdpMap[tdp].nu}</td>
-                    </tr>
-                `;
-            }
-            html += `</tbody></table></div>`;
-
-            html += `
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px; margin-bottom: 20px;">
-                    <div>
-                        <h3 style="margin-bottom: 8px; font-size: 1.1rem; color: var(--primary-color);"><i class="fa-solid fa-people-group"></i> 2. Thống kê theo Dân Tộc</h3>
-                        <div class="table-responsive">
-                            <table class="custom-table">
-                                <thead><tr><th>Dân tộc</th><th>Số lượng</th></tr></thead>
-                                <tbody>
-            `;
-            for (let dt in danTocMap) {
-                html += `<tr><td>${dt}</td><td><b>${danTocMap[dt]}</b></td></tr>`;
-            }
-            html += `
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                    <div>
-                        <h3 style="margin-bottom: 8px; font-size: 1.1rem; color: var(--primary-color);"><i class="fa-solid fa-place-of-worship"></i> 3. Thống kê theo Tôn Giáo</h3>
-                        <div class="table-responsive">
-                            <table class="custom-table">
-                                <thead><tr><th>Tôn giáo</th><th>Số lượng</th></tr></thead>
-                                <tbody>
-            `;
-            for (let tg in tonGiaoMap) {
-                html += `<tr><td>${tg}</td><td><b>${tonGiaoMap[tg]}</b></td></tr>`;
-            }
-            html += `
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
+                <div class="bg-emerald-50 p-3 rounded-xl border border-emerald-200">
+                    <div class="text-2xl font-bold text-emerald-800">${totalMembers}</div>
+                    <div class="text-xs text-slate-600 uppercase font-semibold mt-1">Tổng nhân khẩu</div>
                 </div>
-            `;
-
-            html += `
-                <h3 style="margin-bottom: 8px; font-size: 1.1rem; color: var(--primary-color);"><i class="fa-solid fa-calendar-days"></i> 4. Thống kê độ tuổi chuyên đề</h3>
-                <div class="table-responsive">
-                    <table class="custom-table">
-                        <thead>
-                            <tr>
-                                <th>Nhóm độ tuổi / Phân loại</th>
-                                <th>Tổng số</th>
-                                <th>Nam</th>
-                                <th>Nữ</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td><b>Độ tuổi từ 14 trở lên</b> (Căn cước / Định danh)</td>
-                                <td><b>${countTuoi14TroLen}</b></td>
-                                <td colspan="2">Tổng hợp chung</td>
-                            </tr>
-                            <tr>
-                                <td><b>Độ tuổi từ đủ 17 đến dưới 18 tuổi</b></td>
-                                <td><b>${count17to18_Nam + count17to18_Nu}</b></td>
-                                <td>${count17to18_Nam}</td>
-                                <td>${count17to18_Nu}</td>
-                            </tr>
-                            <tr>
-                                <td><b>Độ tuổi nghĩa vụ quân sự từ đủ 18 đến dưới 25 tuổi</b></td>
-                                <td><b>${countNVQS18to25_Nam + countNVQS18to25_Nu}</b></td>
-                                <td>${countNVQS18to25_Nam}</td>
-                                <td>${countNVQS18to25_Nu}</td>
-                            </tr>
-                            <tr>
-                                <td><b>Độ tuổi từ 25 đến dưới 27 tuổi</b></td>
-                                <td><b>${count25to27_Nam + count25to27_Nu}</b></td>
-                                <td>${count25to27_Nam}</td>
-                                <td>${count25to27_Nu}</td>
-                            </tr>
-                        </tbody>
-                    </table>
+                <div class="bg-cyan-50 p-3 rounded-xl border border-cyan-200">
+                    <div class="text-sm font-bold text-cyan-800">Nam: ${maleCount}</div>
+                    <div class="text-sm font-bold text-pink-700 mt-1">Nữ: ${femaleCount}</div>
                 </div>
-            `;
+                <div class="bg-amber-50 p-3 rounded-xl border border-amber-200">
+                    <div class="text-2xl font-bold text-amber-800">${over14Count}</div>
+                    <div class="text-xs text-slate-600 uppercase font-semibold mt-1">Từ 14 tuổi lên</div>
+                </div>
+            </div>
 
-            document.getElementById("statModalBody").innerHTML = html;
-            document.getElementById("modalStat").style.display = "block";
-        }
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                <div class="border rounded-xl p-4 bg-slate-50">
+                    <h4 class="font-bold text-slate-700 text-sm mb-2 border-b pb-1">Phân Bố Nhóm Tuổi</h4>
+                    <ul class="text-xs space-y-1">${buildListHtml(ageGroups)}</ul>
+                </div>
+                <div class="border rounded-xl p-4 bg-slate-50">
+                    <h4 class="font-bold text-slate-700 text-sm mb-2 border-b pb-1">Thống Kê Dân Tộc</h4>
+                    <ul class="text-xs space-y-1 max-h-40 overflow-y-auto">${buildListHtml(ethnicMap)}</ul>
+                </div>
+                <div class="border rounded-xl p-4 bg-slate-50">
+                    <h4 class="font-bold text-slate-700 text-sm mb-2 border-b pb-1">Thống Kê Tôn Giáo</h4>
+                    <ul class="text-xs space-y-1 max-h-40 overflow-y-auto">${buildListHtml(religionMap)}</ul>
+                </div>
+                <div class="border rounded-xl p-4 bg-slate-50">
+                    <h4 class="font-bold text-slate-700 text-sm mb-2 border-b pb-1">Tình Trạng Nhà Ở (Theo số SHK)</h4>
+                    <ul class="text-xs space-y-1 max-h-40 overflow-y-auto">${buildListHtml(housingMap)}</ul>
+                </div>
+                <div class="border rounded-xl p-4 bg-slate-50">
+                    <h4 class="font-bold text-slate-700 text-sm mb-2 border-b pb-1">Hệ Loại Đối Tượng</h4>
+                    <ul class="text-xs space-y-1 max-h-40 overflow-y-auto">${buildListHtml(objectTypeMap)}</ul>
+                </div>
+                <div class="border rounded-xl p-4 bg-slate-50">
+                    <h4 class="font-bold text-slate-700 text-sm mb-2 border-b pb-1">Chi Tiết Đối Tượng</h4>
+                    <ul class="text-xs space-y-1 max-h-40 overflow-y-auto">${buildListHtml(detailObjectMap)}</ul>
+                </div>
+                <div class="border rounded-xl p-4 bg-slate-50">
+                    <h4 class="font-bold text-slate-700 text-sm mb-2 border-b pb-1">Trình Độ Học Vấn</h4>
+                    <ul class="text-xs space-y-1 max-h-40 overflow-y-auto">${buildListHtml(educationMap)}</ul>
+                </div>
+                <div class="border rounded-xl p-4 bg-slate-50">
+                    <h4 class="font-bold text-slate-700 text-sm mb-2 border-b pb-1">Thống Kê Ghi Chú</h4>
+                    <ul class="text-xs space-y-1 max-h-40 overflow-y-auto">${buildListHtml(noteMap)}</ul>
+                </div>
+            </div>
+        `;
+        openModal('statsModal');
+    }
 
-        // XUẤT & NHẬP EXCEL
-        function exportExcel() {
-            const exportData = nhanKhauData.map((item, index) => ({
-                "STT": item.stt || (index + 1),
-                "Họ và Tên": item.hoTen,
-                "Số Hộ Khẩu": item.shk,
-                "Ngày Sinh": item.namSinh,
-                "Giới Tính": item.gioiTinh,
-                "Quan Hệ Với Chủ Hộ": item.quanHe,
-                "Họ Tên Chủ Hộ": item.hoTenCH,
-                "Số Căn Cước": item.canCuoc,
-                "Số Điện Thoại": item.soDT,
-                "Dân Tộc": item.danToc,
-                "Tôn Giáo": item.tonGiao,
-                "Tổ Dân Phố": item.tdp,
-                "Quê Quán": item.queQuan,
-                "Số Nhà": item.soNha,
-                "Nơi Thường Trú": item.thuongTru,
-                "Nơi Cư Trú": item.cuTru,
-                "Tên Cha": item.tenCha,
-                "Tên Mẹ": item.tenMe,
-                "Ghi Chú": item.ghiChu
-            }));
+    function backupJSON() {
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(populationData, null, 2));
+        const downloadAnchor = document.createElement('a');
+        downloadAnchor.setAttribute("href", dataStr);
+        downloadAnchor.setAttribute("download", "backup_nhankhau.json");
+        document.body.appendChild(downloadAnchor);
+        downloadAnchor.click();
+        downloadAnchor.remove();
+    }
 
-            const ws = XLSX.utils.json_to_sheet(exportData);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, "DanhSachCuTru");
-            XLSX.writeFile(wb, "QuanLyCuTru_TDP7ThanhCong.xlsx");
-            showToast("Xuất Excel thành công!");
-        }
+    function restoreJSON(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = function(evt) {
+            try {
+                const json = JSON.parse(evt.target.result);
+                if (Array.isArray(json)) {
+                    if (confirm("Khôi phục JSON sẽ ghi đè toàn bộ dữ liệu hiện tại. Tiếp tục?")) {
+                        populationData = json;
+                        saveDataToStorage();
+                        renderHouseList();
+                        alert("Khôi phục thành công!");
+                    }
+                } else { alert("File JSON không hợp lệ!"); }
+            } catch (err) { alert("Lỗi đọc JSON: " + err.message); }
+        };
+        reader.readAsText(file);
+        e.target.value = "";
+    }
 
-        function importExcel(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                try {
-                    const data = new Uint8Array(event.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    const firstSheet = workbook.SheetNames[0];
-                    const rows = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet]);
-
-                    nhanKhauData = rows.map((r, i) => ({
-                        stt: r["STT"] || (i + 1),
-                        hoTen: r["Họ và Tên"] || r["Ho va Ten"] || "",
-                        shk: String(r["Số Hộ Khẩu"] || r["So Ho Khau"] || ""),
-                        namSinh: String(r["Ngày Sinh"] || r["Ngay Sinh"] || ""),
-                        gioiTinh: r["Giới Tính"] || r["Gioi Tinh"] || "Nam",
-                        quanHe: r["Quan Hệ Với Chủ Hộ"] || r["Quan He"] || "Thành viên",
-                        hoTenCH: r["Họ Tên Chủ Hộ"] || r["Chu Ho"] || "",
-                        canCuoc: String(r["Số Căn Cước"] || r["CCCD"] || ""),
-                        soDT: String(r["Số Điện Thoại"] || r["SĐT"] || ""),
-                        danToc: r["Dân Tộc"] || "Kinh",
-                        tonGiao: r["Tôn Giáo"] || "Không",
-                        tdp: r["Tổ Dân Phố"] || r["TDP"] || "TDP 7",
-                        queQuan: r["Quê Quán"] || "",
-                        soNha: String(r["Số Nhà"] || ""),
-                        thuongTru: r["Nơi Thường Trú"] || "",
-                        cuTru: r["Nơi Cư Trú"] || "",
-                        tenCha: r["Tên Cha"] || "",
-                        tenMe: r["Tên Mẹ"] || "",
-                        ghiChu: r["Ghi Chú"] || "",
-                        avatar: ""
-                    }));
-
-                    saveToLocalStorage();
-                    renderApp();
-                    showToast("Nhập file Excel thành công!");
-                } catch (err) {
-                    alert("Lỗi đọc file Excel: " + err.message);
-                }
-            };
-            reader.readAsArrayBuffer(file);
-        }
-
-        function openLightbox(src) {
-            document.getElementById("lightboxImg").src = src;
-            document.getElementById("lightboxModal").style.display = "block";
-        }
-
-        function closeLightbox() {
-            document.getElementById("lightboxModal").style.display = "none";
-        }
-
-        function closeModal(modalId) {
-            document.getElementById(modalId).style.display = "none";
-            if (modalId === 'modalForm') stopFormCamera();
-        }
-
-        function showToast(msg) {
-            const toast = document.getElementById("toast");
-            document.getElementById("toastMsg").innerText = msg;
-            toast.style.display = "flex";
-            setTimeout(() => { toast.style.display = "none"; }, 3000);
-        }
-
-        window.onclick = function(event) {
-            if (event.target.classList.contains('modal')) {
-                event.target.style.display = "none";
-                stopFormCamera();
-            }
-        }
-    </script>
+    function openModal(modalId) { document.getElementById(modalId).classList.remove('hidden'); }
+    function closeModal(modalId) { document.getElementById(modalId).classList.add('hidden'); }
+</script>
 </body>
 </html>
-```[cite: 6]
